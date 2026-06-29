@@ -13,6 +13,6 @@ API en Node.js + TypeScript con Fastify, Drizzle ORM y zod. Worker separado en P
 
 ## Consecuencias
 
-- Tipos compartidos entre Web y API en `packages/shared`.
+- Tipos compartidos en `packages/contracts`.
 - Dos lenguajes: el contrato del job debe mantenerse sincronizado (zod en TS, pydantic en Python).
 - La API y el worker escalan de forma independiente.

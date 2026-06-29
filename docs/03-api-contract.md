@@ -68,7 +68,7 @@ Estado de Postgres, Redis y MinIO.
 
 ## Payload del job (cola `separation`)
 
-Definido en `packages/shared` (zod) y replicado en el worker (pydantic).
+Definido en `packages/contracts` (zod). El worker usa modelos pydantic generados desde el JSON Schema.
 
 ```json
 { "jobId": "uuid", "trackId": "uuid", "inputKey": "tracks/{trackId}/original.mp3", "model": "htdemucs_6s" }
