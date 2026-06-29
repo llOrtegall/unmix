@@ -1,6 +1,6 @@
 # 0005 — Frontend: React + Vite + TypeScript
 
-- **Estado:** Aceptada
+- **Estado:** Aceptada. Gestión de estado reemplazada por [0017](0017-frontend-clean-zustand.md)
 - **Fecha:** 2026-10-27
 
 ## Contexto
