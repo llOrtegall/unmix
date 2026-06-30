@@ -9,7 +9,7 @@ Formato MADR corto. Una decisión por archivo. Para cambiar una decisión, crear
 | [0003](0003-backend-node-worker-python.md) | Backend: API Node + worker Python |
 | [0004](0004-cola-redis-bullmq.md) | Cola: Redis + BullMQ |
 | [0005](0005-frontend-react-vite.md) | Frontend: React + Vite + TypeScript |
-| [0006](0006-storage-postgres-minio.md) | Persistencia: Postgres + MinIO |
+| [0006](0006-storage-postgres-minio.md) | Persistencia: Postgres + MinIO (storage reemplazado por 0019) |
 | [0007](0007-infra-docker-compose.md) | Infra: Docker Compose |
 | [0008](0008-limites-entrada.md) | Entrada: audio y video, máximo 10 minutos |
 | [0009](0009-auth-better-auth-google.md) | Auth: Better Auth + Google (fase 5) |
@@ -22,3 +22,4 @@ Formato MADR corto. Una decisión por archivo. Para cambiar una decisión, crear
 | [0016](0016-contratos-zod-json-schema-pydantic.md) | Contratos: zod → JSON Schema → pydantic |
 | [0017](0017-frontend-clean-zustand.md) | Frontend: Clean Architecture + Zustand |
 | [0018](0018-reglas-dependencia-ci.md) | Reglas de dependencia en CI |
+| [0019](0019-storage-seaweedfs.md) | Storage S3 local: SeaweedFS en lugar de MinIO |

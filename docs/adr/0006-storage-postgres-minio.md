@@ -1,6 +1,6 @@
 # 0006 — Persistencia: Postgres + MinIO
 
-- **Estado:** Aceptada
+- **Estado:** Aceptada. Motor de storage reemplazado por [0019](0019-storage-seaweedfs.md)
 - **Fecha:** 2026-10-27
 
 ## Contexto

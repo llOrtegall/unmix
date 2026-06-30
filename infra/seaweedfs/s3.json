@@ -1,0 +1,11 @@
+{
+  "identities": [
+    {
+      "name": "unmix",
+      "credentials": [
+        { "accessKey": "unmix", "secretKey": "unmix-secret" }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
