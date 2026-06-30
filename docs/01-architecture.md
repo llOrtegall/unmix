@@ -63,9 +63,11 @@ sequenceDiagram
 
 - **Worker intercambiable.** El worker solo conoce la cola y S3. Cambiar a GPU o a un proveedor cloud no afecta API ni Web.
 - **Archivos fuera de la API.** Web sube y descarga directo a MinIO con URLs firmadas. La API nunca transmite audio.
-- **Contratos compartidos.** Los schemas zod en `packages/shared` definen payloads de API y jobs. El worker valida el mismo contrato con pydantic.
+- **Contratos compartidos.** Los schemas zod en `packages/contracts` definen payloads de API y jobs. El worker valida el mismo contrato con modelos pydantic generados.
 - **Fallos esperados.** Reintentos con backoff, jobs idempotentes (misma clave de salida), timeouts por duración.
 - **Configuración por entorno.** Nada hardcodeado; todo en `.env`.
+
+Modelo de dominio en [06-domain.md](06-domain.md). Capas y reglas de dependencia en [07-code-structure.md](07-code-structure.md).
 
 ## Rendimiento esperado (CPU)
 

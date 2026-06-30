@@ -20,6 +20,8 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 ## Fase 2 — Worker
 
+- `packages/contracts`: mensajes `separation.*.v1` en zod y generación de pydantic ([ADR 0016](adr/0016-contratos-zod-json-schema-pydantic.md)).
+- Estructura hexagonal con `import-linter` ([07](07-code-structure.md)).
 - Consume la cola `separation` con el paquete Python `bullmq`.
 - Descarga el original desde MinIO, valida duración, normaliza con ffmpeg.
 - Ejecuta Demucs y reporta progreso.
@@ -32,6 +34,7 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 ## Fase 3 — API
 
 - Fastify + TypeScript + Drizzle (migraciones) + zod.
+- Monolito modular (`separation`, `library`), Result type, outbox relay y `dependency-cruiser` ([ADRs 0012–0015, 0018](adr/)).
 - Endpoints de [03-api-contract.md](03-api-contract.md).
 - SSE escuchando `QueueEvents` de BullMQ.
 - Generación de ZIP en streaming.
@@ -41,6 +44,7 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 ## Fase 4 — Frontend
 
+- Clean Architecture + Zustand ([ADR 0017](adr/0017-frontend-clean-zustand.md)); dominio del mixer con tests unitarios.
 - Drag and drop con validación previa (tipo, tamaño).
 - Barra de subida y barra de procesamiento en vivo.
 - Mixer: waveform por stem, mute, solo, volumen, play/pause/seek sincronizado.

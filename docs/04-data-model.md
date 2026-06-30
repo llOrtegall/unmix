@@ -45,6 +45,14 @@ erDiagram
     text object_key
     bigint size_bytes
   }
+  outbox {
+    uuid id PK
+    text event_type "p. ej. separation.requested.v1"
+    jsonb payload
+    timestamptz occurred_at
+    timestamptz published_at "null = pendiente"
+    int attempts
+  }
 ```
 
 ## Claves en MinIO
@@ -55,6 +63,8 @@ tracks/{trackId}/stems/{name}.wav
 ```
 
 ## Notas
+
+- `outbox`: se escribe en la misma transacción que el agregado; un relay publica las filas pendientes ([ADR 0014](adr/0014-transactional-outbox.md)).
 
 - `users` llega en fase 5; Better Auth genera sus propias tablas (`session`, `account`, `verification`).
 - Un track puede tener varios jobs (reintentos manuales, cambio de modelo futuro).

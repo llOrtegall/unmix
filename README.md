@@ -12,7 +12,7 @@ Fase 0 — Setup. Ver [roadmap](docs/02-roadmap.md).
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | React + Vite + TypeScript, wavesurfer.js, TanStack Query |
+| Frontend | React + Vite + TypeScript, Zustand, wavesurfer.js |
 | API | Node.js + TypeScript, Fastify, Drizzle ORM, zod |
 | Cola | Redis + BullMQ |
 | Worker | Python, Demucs (PyTorch, CPU), ffmpeg |
@@ -20,13 +20,17 @@ Fase 0 — Setup. Ver [roadmap](docs/02-roadmap.md).
 | Archivos | MinIO (compatible con S3) |
 | Infra | Docker Compose |
 
+## Arquitectura
+
+Clean Architecture + DDD táctico en los tres servicios; la API es un monolito modular. Ver [06](docs/06-domain.md), [07](docs/07-code-structure.md) y ADRs 0011–0018.
+
 ## Estructura
 
 ```
 apps/web          Frontend React
 apps/api          API Node (Fastify)
 services/worker   Worker Python (Demucs)
-packages/shared   Contratos y tipos compartidos (zod)
+packages/contracts Contratos entre procesos (zod → JSON Schema → pydantic)
 docs/             Visión, arquitectura, roadmap, ADRs
 ```
 
@@ -38,6 +42,8 @@ docs/             Visión, arquitectura, roadmap, ADRs
 - [03 — Contrato de API](docs/03-api-contract.md)
 - [04 — Modelo de datos](docs/04-data-model.md)
 - [05 — Setup local](docs/05-setup.md)
+- [06 — Dominio (DDD)](docs/06-domain.md)
+- [07 — Estructura de código](docs/07-code-structure.md)
 - [Decisiones de arquitectura (ADR)](docs/adr/)
 
 ## Quickstart
