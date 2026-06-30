@@ -1,0 +1,24 @@
+[project]
+name = "unmix-spike"
+version = "0.0.0"
+description = "Phase 1 spike: measure Demucs htdemucs_6s on CPU"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "demucs==4.0.1",
+  # torchaudio 2.9 drops the save backends demucs 4.0.1 relies on.
+  "torch==2.8.0",
+  "torchaudio==2.8.0",
+  "soundfile>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

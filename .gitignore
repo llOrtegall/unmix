@@ -21,3 +21,6 @@ data/
 *.mp3
 *.flac
 *.mp4
+
+# Spike outputs
+services/worker/spike/output/
