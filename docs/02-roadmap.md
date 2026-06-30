@@ -4,11 +4,11 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 ## Fase 0 — Setup del entorno
 
-- Instalar Docker (Docker Desktop con integración WSL o Docker Engine en WSL).
-- Instalar ffmpeg, pnpm y uv.
-- `docker compose up -d postgres redis minio` levanta todo sano.
+- Instalar Docker (Docker Desktop con integración WSL o Docker Engine en WSL). ✅
+- Instalar ffmpeg, pnpm y uv. ✅
+- `docker compose up -d postgres redis s3 s3-init` levanta todo sano.
 
-**Aceptación:** los tres servicios en estado `healthy`; consola MinIO accesible en http://localhost:9001 con bucket `unmix` creado.
+**Aceptación:** los tres servicios en estado `healthy`; bucket `unmix` creado; subida y descarga con URL firmada funcionan.
 
 ## Fase 1 — Spike de Demucs
 
@@ -23,13 +23,13 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 - `packages/contracts`: mensajes `separation.*.v1` en zod y generación de pydantic ([ADR 0016](adr/0016-contratos-zod-json-schema-pydantic.md)).
 - Estructura hexagonal con `import-linter` ([07](07-code-structure.md)).
 - Consume la cola `separation` con el paquete Python `bullmq`.
-- Descarga el original desde MinIO, valida duración, normaliza con ffmpeg.
+- Descarga el original desde el storage S3, valida duración, normaliza con ffmpeg.
 - Ejecuta Demucs y reporta progreso.
 - Sube los stems a `tracks/{trackId}/stems/{stem}.wav`.
 - Reintentos (3, backoff exponencial), timeout y errores tipados.
 - Dockerfile.
 
-**Aceptación:** encolando un job a mano (script), los stems aparecen en MinIO y el job queda `completed`. Matar el worker a mitad de un job y reiniciarlo: el job se reintenta.
+**Aceptación:** encolando un job a mano (script), los stems aparecen en el storage S3 y el job queda `completed`. Matar el worker a mitad de un job y reiniciarlo: el job se reintenta.
 
 ## Fase 3 — API
 

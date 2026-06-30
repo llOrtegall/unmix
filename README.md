@@ -6,7 +6,7 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fase 0 — Setup. Ver [roadmap](docs/02-roadmap.md).
+Fase 0 completada. Siguiente: fase 1 (spike de Demucs). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 
@@ -17,7 +17,7 @@ Fase 0 — Setup. Ver [roadmap](docs/02-roadmap.md).
 | Cola | Redis + BullMQ |
 | Worker | Python, Demucs (PyTorch, CPU), ffmpeg |
 | Datos | PostgreSQL |
-| Archivos | MinIO (compatible con S3) |
+| Archivos | SeaweedFS (compatible con S3) |
 | Infra | Docker Compose |
 
 ## Arquitectura
@@ -50,7 +50,7 @@ docs/             Visión, arquitectura, roadmap, ADRs
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis minio
+docker compose up -d postgres redis s3 s3-init
 ```
 
 Los servicios `api`, `worker` y `web` se activan a partir de las fases 2–4.

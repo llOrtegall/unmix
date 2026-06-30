@@ -107,6 +107,6 @@ generated/json-schema/
 | Nivel | Qué | Herramienta |
 |-------|-----|-------------|
 | Unit | Dominio y use cases con fakes en memoria | vitest, pytest |
-| Integración | Adapters contra Postgres/Redis/MinIO reales | testcontainers |
+| Integración | Adapters contra Postgres/Redis/S3 reales | testcontainers |
 | Contrato | Schemas generados al día, mensajes válidos | script CI |
 | E2E | Flujo de usuario completo | Playwright |

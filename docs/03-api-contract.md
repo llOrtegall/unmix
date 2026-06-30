@@ -5,7 +5,7 @@ Base: `/api/v1`. JSON. Errores con forma `{ "error": { "code": string, "message"
 ## Subida
 
 ### `POST /uploads`
-Crea un track y devuelve una URL firmada para subir el archivo directo a MinIO.
+Crea un track y devuelve una URL firmada para subir el archivo directo al storage S3.
 
 ```json
 // request
@@ -64,7 +64,7 @@ Borra track, stems y archivos.
 ## Salud
 
 ### `GET /health`
-Estado de Postgres, Redis y MinIO.
+Estado de Postgres, Redis y storage S3.
 
 ## Payload del job (cola `separation`)
 

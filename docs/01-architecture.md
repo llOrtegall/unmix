@@ -6,7 +6,7 @@
 flowchart LR
   U[Usuario] --> W[Web<br/>React + Vite]
   W -- REST + SSE --> A[API<br/>Node + Fastify]
-  W -- PUT/GET presigned --> M[(MinIO<br/>S3)]
+  W -- PUT/GET presigned --> M[(Storage S3<br/>SeaweedFS)]
   A --> P[(Postgres)]
   A -- encola job --> R[(Redis<br/>BullMQ)]
   R -- consume job --> K[Worker<br/>Python + Demucs]
@@ -24,7 +24,7 @@ flowchart LR
 | **Redis + BullMQ** | Cola `separation`. Reintentos, backoff, progreso, eventos. |
 | **Worker** | Descarga el original, normaliza con ffmpeg, ejecuta Demucs, sube stems, reporta progreso. Sin estado. |
 | **Postgres** | Tracks, jobs, stems y (fase 5) usuarios. |
-| **MinIO** | Archivos originales y stems. Compatible con S3: migrar a AWS S3 o Cloudflare R2 solo cambia variables de entorno. |
+| **Storage S3** | Archivos originales y stems. SeaweedFS en local, compatible con S3: migrar a AWS S3 o Cloudflare R2 solo cambia variables de entorno. |
 
 ## Flujo de un trabajo
 
@@ -32,7 +32,7 @@ flowchart LR
 sequenceDiagram
   participant W as Web
   participant A as API
-  participant M as MinIO
+  participant M as S3
   participant R as Redis/BullMQ
   participant K as Worker
 
@@ -62,7 +62,7 @@ sequenceDiagram
 ## Principios
 
 - **Worker intercambiable.** El worker solo conoce la cola y S3. Cambiar a GPU o a un proveedor cloud no afecta API ni Web.
-- **Archivos fuera de la API.** Web sube y descarga directo a MinIO con URLs firmadas. La API nunca transmite audio.
+- **Archivos fuera de la API.** Web sube y descarga directo al storage S3 con URLs firmadas. La API nunca transmite audio.
 - **Contratos compartidos.** Los schemas zod en `packages/contracts` definen payloads de API y jobs. El worker valida el mismo contrato con modelos pydantic generados.
 - **Fallos esperados.** Reintentos con backoff, jobs idempotentes (misma clave de salida), timeouts por duración.
 - **Configuración por entorno.** Nada hardcodeado; todo en `.env`.

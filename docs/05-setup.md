@@ -24,14 +24,20 @@ uv --version
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis minio minio-init
+docker compose up -d postgres redis s3 s3-init
 docker compose ps
 ```
 
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
-- MinIO API: http://localhost:9000
-- MinIO consola: http://localhost:9001 (usuario y clave de `.env`)
+- S3 (SeaweedFS): http://localhost:9000 (credenciales en `.env` e `infra/seaweedfs/s3.json`)
+
+SeaweedFS no tiene consola web. Para ver el bucket:
+
+```bash
+docker run --rm --network host -e AWS_ACCESS_KEY_ID=unmix -e AWS_SECRET_ACCESS_KEY=unmix-secret \
+  -e AWS_DEFAULT_REGION=us-east-1 amazon/aws-cli --endpoint-url http://localhost:9000 s3 ls s3://unmix/ --recursive
+```
 
 ## Recursos
 

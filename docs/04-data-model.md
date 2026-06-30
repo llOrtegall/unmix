@@ -55,7 +55,7 @@ erDiagram
   }
 ```
 
-## Claves en MinIO
+## Claves en el storage S3
 
 ```
 tracks/{trackId}/original.{ext}
