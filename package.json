@@ -8,6 +8,7 @@
   },
   "scripts": {
     "infra:up": "docker compose up -d postgres redis s3 s3-init",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "contracts:generate": "pnpm --filter @unmix/contracts generate && make -C services/worker contracts"
   }
 }

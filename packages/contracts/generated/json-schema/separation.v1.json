@@ -1,0 +1,190 @@
+{
+  "title": "SeparationMessagesV1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "requested": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "jobId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "trackId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "inputKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputPrefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "enum": [
+            "htdemucs_6s",
+            "htdemucs_ft",
+            "htdemucs"
+          ],
+          "title": "SeparationModel"
+        }
+      },
+      "required": [
+        "messageId",
+        "jobId",
+        "trackId",
+        "inputKey",
+        "outputPrefix",
+        "model"
+      ],
+      "additionalProperties": false,
+      "title": "SeparationRequestedV1"
+    },
+    "progress": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "downloading",
+            "normalizing",
+            "separating",
+            "uploading"
+          ],
+          "title": "SeparationStage"
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "stage",
+        "progress"
+      ],
+      "additionalProperties": false,
+      "title": "SeparationProgressV1"
+    },
+    "completed": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "trackId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stems": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "enum": [
+                  "vocals",
+                  "drums",
+                  "bass",
+                  "guitar",
+                  "piano",
+                  "other"
+                ],
+                "title": "StemName"
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "format": {
+                "type": "string",
+                "const": "flac"
+              },
+              "silent": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "key",
+              "sizeBytes",
+              "format",
+              "silent"
+            ],
+            "additionalProperties": false,
+            "title": "StemResult"
+          }
+        }
+      },
+      "required": [
+        "jobId",
+        "trackId",
+        "durationSeconds",
+        "stems"
+      ],
+      "additionalProperties": false,
+      "title": "SeparationCompletedV1"
+    },
+    "failure": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_MESSAGE",
+            "INPUT_NOT_FOUND",
+            "INVALID_MEDIA",
+            "DURATION_EXCEEDED",
+            "SEPARATION_ERROR",
+            "STORAGE_ERROR"
+          ],
+          "title": "SeparationFailureCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": false,
+      "title": "SeparationFailureV1"
+    }
+  },
+  "required": [
+    "requested",
+    "progress",
+    "completed",
+    "failure"
+  ],
+  "additionalProperties": false
+}

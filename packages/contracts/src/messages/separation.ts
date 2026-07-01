@@ -1,0 +1,77 @@
+import { z } from "zod";
+
+// Queue and message names shared by the API (producer) and the worker (consumer).
+export const SEPARATION_QUEUE = "separation";
+export const SEPARATION_REQUESTED_V1 = "separation.requested.v1";
+
+export const StemName = z.enum(["vocals", "drums", "bass", "guitar", "piano", "other"]).meta({ title: "StemName" });
+export type StemName = z.infer<typeof StemName>;
+
+export const SeparationModel = z.enum(["htdemucs_6s", "htdemucs_ft", "htdemucs"]).meta({ title: "SeparationModel" });
+export type SeparationModel = z.infer<typeof SeparationModel>;
+
+/** Job data: what to separate and where to put the result. */
+export const SeparationRequestedV1 = z
+  .object({
+    messageId: z.uuid(),
+    jobId: z.uuid(),
+    trackId: z.uuid(),
+    inputKey: z.string().min(1),
+    outputPrefix: z.string().min(1),
+    model: SeparationModel,
+  })
+  .meta({ title: "SeparationRequestedV1" });
+export type SeparationRequestedV1 = z.infer<typeof SeparationRequestedV1>;
+
+export const SeparationStage = z.enum(["downloading", "normalizing", "separating", "uploading"]).meta({ title: "SeparationStage" });
+export type SeparationStage = z.infer<typeof SeparationStage>;
+
+/** Job progress payload (BullMQ `job.updateProgress`). */
+export const SeparationProgressV1 = z
+  .object({
+    stage: SeparationStage,
+    progress: z.int().min(0).max(100),
+  })
+  .meta({ title: "SeparationProgressV1" });
+export type SeparationProgressV1 = z.infer<typeof SeparationProgressV1>;
+
+export const StemResult = z
+  .object({
+    name: StemName,
+    key: z.string().min(1),
+    sizeBytes: z.int().nonnegative(),
+    format: z.literal("flac"),
+    silent: z.boolean(),
+  })
+  .meta({ title: "StemResult" });
+
+/** Job return value on success. */
+export const SeparationCompletedV1 = z
+  .object({
+    jobId: z.uuid(),
+    trackId: z.uuid(),
+    durationSeconds: z.number().positive(),
+    stems: z.array(StemResult).min(1),
+  })
+  .meta({ title: "SeparationCompletedV1" });
+export type SeparationCompletedV1 = z.infer<typeof SeparationCompletedV1>;
+
+export const SeparationFailureCode = z.enum([
+  "INVALID_MESSAGE",
+  "INPUT_NOT_FOUND",
+  "INVALID_MEDIA",
+  "DURATION_EXCEEDED",
+  "SEPARATION_ERROR",
+  "STORAGE_ERROR",
+]).meta({ title: "SeparationFailureCode" });
+export type SeparationFailureCode = z.infer<typeof SeparationFailureCode>;
+
+/** JSON-encoded in the BullMQ `failedReason` string. */
+export const SeparationFailureV1 = z
+  .object({
+    code: SeparationFailureCode,
+    message: z.string(),
+    retryable: z.boolean(),
+  })
+  .meta({ title: "SeparationFailureV1" });
+export type SeparationFailureV1 = z.infer<typeof SeparationFailureV1>;
