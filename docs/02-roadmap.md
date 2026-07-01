@@ -14,7 +14,7 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 - Script CLI en `services/worker/spike/` que separa una canción local en 6 stems.
 - Medir tiempo total, RAM máxima y calidad percibida por stem.
-- Documentar resultados en `docs/spike-demucs.md`.
+- Documentar resultados en `docs/spike-demucs.md`. ✅ 84 s para 4:57 (factor 0.28), 2.2 GB RAM.
 
 **Aceptación:** canción de 4 minutos separada en menos de ~15 minutos en CPU. Si no se cumple, evaluar modelo `htdemucs` (4 stems) o `segment` más pequeño.
 

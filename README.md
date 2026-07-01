@@ -6,7 +6,7 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fase 0 completada. Siguiente: fase 1 (spike de Demucs). Ver [roadmap](docs/02-roadmap.md).
+Fase 1 completada ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 2 (worker). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 
