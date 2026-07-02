@@ -6,7 +6,7 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fase 1 completada ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 2 (worker). Ver [roadmap](docs/02-roadmap.md).
+Fases 0–2 completadas: el worker separa canciones desde la cola ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 3 (API). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 
@@ -53,4 +53,4 @@ cp .env.example .env
 docker compose up -d postgres redis s3 s3-init
 ```
 
-Los servicios `api`, `worker` y `web` se activan a partir de las fases 2–4.
+Worker: `docker compose up -d worker`. Probar con `services/worker/scripts/enqueue.py` (ver [worker](services/worker/README.md)). `api` y `web` llegan en las fases 3–4.

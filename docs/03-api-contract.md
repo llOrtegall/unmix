@@ -66,15 +66,31 @@ Borra track, stems y archivos.
 ### `GET /health`
 Estado de Postgres, Redis y storage S3.
 
-## Payload del job (cola `separation`)
+## Mensajes de la cola `separation`
 
-Definido en `packages/contracts` (zod). El worker usa modelos pydantic generados desde el JSON Schema.
+Definidos en `packages/contracts/src/messages/separation.ts` (zod). El worker usa modelos pydantic generados desde el JSON Schema.
 
+Job `separation.requested.v1` (data):
 ```json
-{ "jobId": "uuid", "trackId": "uuid", "inputKey": "tracks/{trackId}/original.mp3", "model": "htdemucs_6s" }
+{ "messageId": "uuid", "jobId": "uuid", "trackId": "uuid", "inputKey": "tracks/{trackId}/original.mp3", "outputPrefix": "tracks/{trackId}/stems", "model": "htdemucs_6s" }
 ```
 
-Resultado:
+Opciones del productor: `jobId` = `jobId` del mensaje (idempotencia), `attempts: 3`, `backoff: exponential 5 s`.
+
+Progreso (`job.progress`):
 ```json
-{ "durationSeconds": 241, "stems": [{ "name": "vocals", "key": "tracks/{trackId}/stems/vocals.wav", "sizeBytes": 42000000 }] }
+{ "stage": "separating", "progress": 42 }
 ```
+
+Resultado (`job.returnvalue`, `SeparationCompletedV1`):
+```json
+{ "jobId": "uuid", "trackId": "uuid", "durationSeconds": 297.27,
+  "stems": [{ "name": "piano", "key": "tracks/{trackId}/stems/piano.flac", "sizeBytes": 9808880, "format": "flac", "silent": true }] }
+```
+
+Fallo (`job.failedReason`, JSON `SeparationFailureV1`):
+```json
+{ "code": "DURATION_EXCEEDED", "message": "Track lasts 720 s; the limit is 600 s.", "retryable": false }
+```
+
+Códigos: `INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED` (no reintentables); `SEPARATION_ERROR`, `STORAGE_ERROR` (reintentables).

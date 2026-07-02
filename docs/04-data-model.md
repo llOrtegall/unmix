@@ -59,7 +59,7 @@ erDiagram
 
 ```
 tracks/{trackId}/original.{ext}
-tracks/{trackId}/stems/{name}.wav
+tracks/{trackId}/stems/{name}.flac
 ```
 
 ## Notas

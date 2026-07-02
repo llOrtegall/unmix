@@ -25,11 +25,13 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 - Consume la cola `separation` con el paquete Python `bullmq`.
 - Descarga el original desde el storage S3, valida duración, normaliza con ffmpeg.
 - Ejecuta Demucs y reporta progreso.
-- Sube los stems a `tracks/{trackId}/stems/{stem}.wav`.
+- Sube los stems a `tracks/{trackId}/stems/{stem}.flac` ([ADR 0020](adr/0020-stems-flac-y-silencio.md)).
 - Reintentos (3, backoff exponencial), timeout y errores tipados.
 - Dockerfile.
 
 **Aceptación:** encolando un job a mano (script), los stems aparecen en el storage S3 y el job queda `completed`. Matar el worker a mitad de un job y reiniciarlo: el job se reintenta.
+
+**Estado:** ✅ completada (2026-10-27). Job de punta a punta en Docker: 83 s para 4:57. Archivo inválido: `INVALID_MEDIA` sin reintentos. `kill -9` a mitad del job: BullMQ lo recupera unos 60 s después y lo completa.
 
 ## Fase 3 — API
 

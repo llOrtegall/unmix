@@ -23,3 +23,4 @@ Formato MADR corto. Una decisión por archivo. Para cambiar una decisión, crear
 | [0017](0017-frontend-clean-zustand.md) | Frontend: Clean Architecture + Zustand |
 | [0018](0018-reglas-dependencia-ci.md) | Reglas de dependencia en CI |
 | [0019](0019-storage-seaweedfs.md) | Storage S3 local: SeaweedFS en lugar de MinIO |
+| [0020](0020-stems-flac-y-silencio.md) | Stems en FLAC y detección de stems silenciosos |
