@@ -63,12 +63,31 @@ services:
       aws --endpoint-url http://s3:8333 s3 mb s3://$${S3_BUCKET}
       "
 
-  # Phase 3
-  # api:
-  #   build: ./apps/api
-  #   env_file: .env
-  #   ports: ["3000:3000"]
-  #   depends_on: [postgres, redis, s3]
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-unmix}:${POSTGRES_PASSWORD:-unmix}@postgres:5432/${POSTGRES_DB:-unmix}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://s3:8333
+      # Presigned URLs must point to an address the browser can reach.
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
 
   worker:
     build: ./services/worker
