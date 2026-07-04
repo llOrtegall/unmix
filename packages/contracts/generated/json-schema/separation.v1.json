@@ -126,6 +126,14 @@
               },
               "silent": {
                 "type": "boolean"
+              },
+              "previewKey": {
+                "type": "string",
+                "minLength": 1
+              },
+              "peaksKey": {
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -133,7 +141,9 @@
               "key",
               "sizeBytes",
               "format",
-              "silent"
+              "silent",
+              "previewKey",
+              "peaksKey"
             ],
             "additionalProperties": false,
             "title": "StemResult"

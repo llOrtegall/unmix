@@ -42,6 +42,10 @@ export const StemResult = z
     sizeBytes: z.int().nonnegative(),
     format: z.literal("flac"),
     silent: z.boolean(),
+    /** MP3 for streaming playback in the browser. */
+    previewKey: z.string().min(1),
+    /** JSON `{ version: 1, peaks: number[] }` (0..1) to draw the waveform. */
+    peaksKey: z.string().min(1),
   })
   .meta({ title: "StemResult" });
 

@@ -52,7 +52,12 @@ export type TrackStatus = z.infer<typeof TrackStatus>;
 
 export const StemResponse = z.object({
   name: StemName,
+  /** Lossless FLAC download. */
   url: z.url(),
+  /** MP3 for streaming playback. */
+  previewUrl: z.url(),
+  /** JSON `{ version: 1, peaks: number[] }`. */
+  peaksUrl: z.url(),
   sizeBytes: z.int(),
   silent: z.boolean(),
 });
