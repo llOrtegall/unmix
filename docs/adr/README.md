@@ -24,3 +24,5 @@ Formato MADR corto. Una decisión por archivo. Para cambiar una decisión, crear
 | [0018](0018-reglas-dependencia-ci.md) | Reglas de dependencia en CI |
 | [0019](0019-storage-seaweedfs.md) | Storage S3 local: SeaweedFS en lugar de MinIO |
 | [0020](0020-stems-flac-y-silencio.md) | Stems en FLAC y detección de stems silenciosos |
+| [0021](0021-eventos-en-proceso-y-reconciliacion.md) | Eventos de dominio en proceso, outbox y reconciliación |
+| [0022](0022-typescript-sin-build.md) | API en TypeScript sin paso de build |

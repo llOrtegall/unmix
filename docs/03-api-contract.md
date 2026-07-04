@@ -1,6 +1,6 @@
 # 03 — Contrato de API (borrador)
 
-Base: `/api/v1`. JSON. Errores con forma `{ "error": { "code": string, "message": string } }`.
+Base: `/api/v1`. JSON. Schemas en `packages/contracts/src/http/api.ts` (zod). Errores con forma `{ "error": { "code": string, "message": string } }`.
 
 ## Subida
 
@@ -19,27 +19,27 @@ Validaciones: tipo permitido, `sizeBytes <= MAX_UPLOAD_MB`.
 ## Trabajos
 
 ### `POST /tracks/:trackId/jobs`
-Confirma que la subida terminó y encola la separación.
+Comprueba que el archivo está en el storage y encola la separación. `409 UPLOAD_MISSING` si aún no se subió; `409 TRACK_BUSY` si ya se está separando.
 
 ```json
-// response 202
-{ "jobId": "uuid", "status": "queued" }
+// response 202 (JobResponse)
+{ "jobId": "uuid", "trackId": "uuid", "status": "queued", "stage": null, "progress": 0, "error": null }
 ```
 
 ### `GET /jobs/:jobId`
 ```json
-{ "jobId": "uuid", "trackId": "uuid", "status": "queued|processing|completed|failed", "progress": 42, "error": null }
+{ "jobId": "uuid", "trackId": "uuid", "status": "queued|processing|completed|failed", "stage": "separating", "progress": 42, "error": null }
 ```
 
 ### `GET /jobs/:jobId/events` (SSE)
-Eventos: `progress` `{ "progress": 42, "stage": "separating" }`, `completed`, `failed` `{ "code", "message" }`.
+Eventos: `snapshot` (estado actual al conectar), `progress`, `completed`, `failed`. El `data` de todos es un `JobResponse`. Comentario `: ping` cada 15 s. La conexión se cierra al terminar el job.
 
 Etapas (`stage`): `downloading`, `normalizing`, `separating`, `uploading`.
 
 ## Tracks
 
 ### `GET /tracks`
-Historial paginado (`?cursor=&limit=20`).
+Historial paginado, más nuevo primero (`?cursor=<createdAt ISO>&limit=20`). Respuesta `{ items, nextCursor }`.
 
 ### `GET /tracks/:trackId`
 ```json
@@ -47,24 +47,25 @@ Historial paginado (`?cursor=&limit=20`).
   "trackId": "uuid",
   "title": "song",
   "durationSeconds": 241,
-  "status": "completed",
+  "status": "awaiting_upload|uploaded|separating|completed|failed",
   "createdAt": "2026-10-27T15:00:00Z",
+  "latestJobId": "uuid",
   "stems": [
-    { "name": "vocals", "url": "https://... (presigned GET)", "sizeBytes": 42000000 }
+    { "name": "vocals", "url": "https://... (presigned GET, 1 h)", "sizeBytes": 21890660, "silent": false }
   ]
 }
 ```
 
 ### `GET /tracks/:trackId/download.zip`
-ZIP en streaming con todos los stems.
+ZIP en streaming con los stems FLAC (sin recomprimir). `409 INVALID_STATE` si el track no está `completed`.
 
 ### `DELETE /tracks/:trackId`
-Borra track, stems y archivos.
+Borra track, stems y archivos. `409 TRACK_BUSY` mientras se separa.
 
 ## Salud
 
-### `GET /health`
-Estado de Postgres, Redis y storage S3.
+### `GET /health` (sin prefijo)
+Estado de Postgres, Redis y storage S3. `200` o `503`.
 
 ## Mensajes de la cola `separation`
 

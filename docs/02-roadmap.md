@@ -44,6 +44,8 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 **Aceptación:** flujo completo con `curl`: subir, crear job, ver eventos SSE, listar stems, descargar ZIP.
 
+**Estado:** ✅ completada (2026-10-27). `pnpm e2e` recorre el flujo en la pila Docker completa (84 s, ZIP de 93 MB). Reconciliación verificada con la API detenida durante un job. Tests de integración con testcontainers quedan pendientes; hoy cubren el e2e y los unit tests.
+
 ## Fase 4 — Frontend
 
 - Clean Architecture + Zustand ([ADR 0017](adr/0017-frontend-clean-zustand.md)); dominio del mixer con tests unitarios.

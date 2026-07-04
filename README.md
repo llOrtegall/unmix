@@ -6,7 +6,7 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fases 0–2 completadas: el worker separa canciones desde la cola ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 3 (API). Ver [roadmap](docs/02-roadmap.md).
+Fases 0–3 completadas: API + worker separan canciones de punta a punta ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 4 (frontend). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 
@@ -50,7 +50,9 @@ docs/             Visión, arquitectura, roadmap, ADRs
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis s3 s3-init
+docker compose up -d          # postgres, redis, s3, worker, api
+curl localhost:3000/health
+pnpm install && pnpm --filter @unmix/api e2e -- /ruta/a/cancion.mp3
 ```
 
-Worker: `docker compose up -d worker`. Probar con `services/worker/scripts/enqueue.py` (ver [worker](services/worker/README.md)). `api` y `web` llegan en las fases 3–4.
+Detalles en [api](apps/api/README.md) y [worker](services/worker/README.md). `web` llega en la fase 4.
