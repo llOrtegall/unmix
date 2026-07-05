@@ -5,4 +5,8 @@ export interface Stem {
   readonly key: string;
   readonly sizeBytes: number;
   readonly silent: boolean;
+  /** Lossy copy for streaming playback. */
+  readonly previewKey: string;
+  /** Waveform peaks JSON. */
+  readonly peaksKey: string;
 }

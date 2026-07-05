@@ -4,7 +4,7 @@ import { SeparationJob } from "../../src/modules/separation/domain/separation-jo
 const now = new Date();
 const request = () =>
   SeparationJob.request({ id: "j1", eventId: "e1", trackId: "t1", inputKey: "in", outputPrefix: "out", model: "htdemucs_6s", now });
-const result = { durationSeconds: 120, stems: [{ name: "drums" as const, key: "out/drums.flac", sizeBytes: 5, silent: false }] };
+const result = { durationSeconds: 120, stems: [{ name: "drums" as const, key: "out/drums.flac", sizeBytes: 5, silent: false, previewKey: "p", peaksKey: "w" }] };
 
 describe("SeparationJob", () => {
   it("records a separation.requested event", () => {

@@ -28,6 +28,8 @@ export const stems = pgTable(
     objectKey: text("object_key").notNull(),
     sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
     silent: boolean("silent").notNull(),
+    previewKey: text("preview_key").notNull(),
+    peaksKey: text("peaks_key").notNull(),
   },
   (t) => [primaryKey({ columns: [t.trackId, t.name] })],
 );

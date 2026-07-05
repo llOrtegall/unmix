@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Track } from "../../src/modules/library/domain/track.ts";
 
 const base = { id: "t1", filename: "My Song.mp3", contentType: "audio/mpeg", sizeBytes: 1000, maxSizeBytes: 5000, now: new Date() };
-const stems = [{ name: "vocals" as const, key: "k/vocals.flac", sizeBytes: 10, silent: false }];
+const stems = [{ name: "vocals" as const, key: "k/vocals.flac", sizeBytes: 10, silent: false, previewKey: "p", peaksKey: "w" }];
 
 describe("Track", () => {
   it("registers with a title and an input key derived from the media type", () => {

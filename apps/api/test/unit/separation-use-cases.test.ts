@@ -19,7 +19,7 @@ function setup(ready = true) {
   };
 }
 
-const result = { durationSeconds: 60, stems: [{ name: "vocals" as const, key: "k", sizeBytes: 1, silent: false }] };
+const result = { durationSeconds: 60, stems: [{ name: "vocals" as const, key: "k", sizeBytes: 1, silent: false, previewKey: "p", peaksKey: "w" }] };
 
 describe("RequestSeparation", () => {
   it("creates a queued job and publishes separation.requested", async () => {

@@ -85,6 +85,10 @@ log(`track ${track.status}, ${track.durationSeconds?.toFixed(1)} s, stems: ${tra
 const stem = await fetch(track.stems[0]!.url);
 log(`stem url -> ${stem.status} ${stem.headers.get("content-length")} bytes`);
 await stem.body?.cancel();
+const peaks = (await (await fetch(track.stems[0]!.peaksUrl)).json()) as { peaks: number[] };
+const preview = await fetch(track.stems[0]!.previewUrl);
+log(`peaks -> ${peaks.peaks.length} points, preview -> ${preview.status} ${preview.headers.get("content-type")} ${preview.headers.get("content-length")} bytes`);
+await preview.body?.cancel();
 
 const zip = await call(`/tracks/${upload.trackId}/download.zip`);
 const zipBytes = (await zip.arrayBuffer()).byteLength;

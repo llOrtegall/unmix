@@ -44,7 +44,15 @@ export class DrizzleTrackRepository implements TrackRepository {
       await db.delete(stems).where(eq(stems.trackId, t.id));
       if (t.stems.length > 0) {
         await db.insert(stems).values(
-          t.stems.map((s) => ({ trackId: t.id, name: s.name, objectKey: s.key, sizeBytes: s.sizeBytes, silent: s.silent })),
+          t.stems.map((s) => ({
+            trackId: t.id,
+            name: s.name,
+            objectKey: s.key,
+            sizeBytes: s.sizeBytes,
+            silent: s.silent,
+            previewKey: s.previewKey,
+            peaksKey: s.peaksKey,
+          })),
         );
       }
     });
@@ -85,7 +93,14 @@ function toDomain(row: TrackRow, stemRows: StemRow[]): Track {
     durationSeconds: row.durationSeconds,
     latestJobId: row.latestJobId,
     stems: stemRows.map(
-      (s): Stem => ({ name: s.name as StemName, key: s.objectKey, sizeBytes: s.sizeBytes, silent: s.silent }),
+      (s): Stem => ({
+        name: s.name as StemName,
+        key: s.objectKey,
+        sizeBytes: s.sizeBytes,
+        silent: s.silent,
+        previewKey: s.previewKey,
+        peaksKey: s.peaksKey,
+      }),
     ),
     createdAt: row.createdAt,
   });
