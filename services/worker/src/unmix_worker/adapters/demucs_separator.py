@@ -13,6 +13,9 @@ from demucs.pretrained import get_model
 from unmix_worker.application.ports import SeparatedStem
 from unmix_worker.domain.model import StemName
 
+# Enough points for a full-width waveform without a heavy JSON (about 6 KB).
+PEAK_BUCKETS = 1000
+
 
 class DemucsSeparator:
     """Demucs on CPU. Audio I/O goes through soundfile, not torchaudio (see spike notes)."""
@@ -54,7 +57,9 @@ class DemucsSeparator:
             samples = source.numpy().T.clip(-1.0, 1.0)
             path = out_dir / f"{name}.flac"
             sf.write(path, samples, net.samplerate, format="FLAC", subtype="PCM_16")
-            stems.append(SeparatedStem(StemName(name), path, _rms_db(samples) - mix_db))
+            stems.append(
+                SeparatedStem(StemName(name), path, _rms_db(samples) - mix_db, _peaks(samples))
+            )
         on_progress(1.0)
         return stems
 
@@ -87,6 +92,15 @@ class _progress_hook:
             yield item
             self._on_progress((self._done + i / len(items)) / self._models)
         self._done += 1
+
+
+def _peaks(samples: np.ndarray, buckets: int = PEAK_BUCKETS) -> list[float]:
+    """Max absolute amplitude per bucket (mono), rounded to keep the JSON small."""
+    mono = np.abs(samples).max(axis=1)
+    usable = len(mono) - len(mono) % buckets
+    if usable == 0:
+        return [0.0] * buckets
+    return [round(float(v), 3) for v in mono[:usable].reshape(buckets, -1).max(axis=1)]
 
 
 def _rms_db(samples: np.ndarray) -> float:

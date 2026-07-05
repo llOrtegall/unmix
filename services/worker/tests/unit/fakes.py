@@ -22,6 +22,14 @@ class FakeStorage:
         self.uploaded[key] = content_type
         return 10
 
+    def put_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        self.uploaded[key] = content_type
+
+
+class FakePreviews:
+    def encode(self, src: Path, dest: Path) -> None:
+        dest.write_bytes(b"mp3")
+
 
 class FakeNormalizer:
     def __init__(self, duration: float = 240.0, failure: SeparationFailure | None = None):
@@ -45,7 +53,11 @@ class FakeSeparator:
         self.calls += 1
         on_progress(0.5)
         on_progress(1.0)
-        return [SeparatedStem(n, out_dir / f"{n}.flac", db) for n, db in self.levels.items()]
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return [
+            SeparatedStem(n, out_dir / f"{n}.flac", db, [0.0, 0.5, 1.0])
+            for n, db in self.levels.items()
+        ]
 
 
 class RecordingProgress:

@@ -21,6 +21,8 @@ class ObjectStorage(Protocol):
         """Upload `src` to `key` and return its size in bytes."""
         ...
 
+    def put_bytes(self, data: bytes, key: str, content_type: str) -> None: ...
+
 
 @dataclass(frozen=True, slots=True)
 class NormalizedAudio:
@@ -39,6 +41,13 @@ class SeparatedStem:
     name: StemName
     path: Path
     relative_db: float
+    peaks: list[float]
+
+
+class PreviewEncoder(Protocol):
+    def encode(self, src: Path, dest: Path) -> None:
+        """Write a lossy, streamable preview of `src` (MP3)."""
+        ...
 
 
 class StemSeparator(Protocol):
@@ -49,7 +58,7 @@ class StemSeparator(Protocol):
         model: str,
         on_progress: Callable[[float], None],
     ) -> list[SeparatedStem]:
-        """Write one FLAC per stem into `out_dir`; report progress as 0..1."""
+        """Write one FLAC per stem into `out_dir` with waveform peaks; report progress as 0..1."""
         ...
 
 

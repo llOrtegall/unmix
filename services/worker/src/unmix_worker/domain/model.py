@@ -47,7 +47,17 @@ class SeparationTask:
     model: str
 
     def stem_key(self, name: StemName) -> str:
-        return f"{self.output_prefix.rstrip('/')}/{name}.flac"
+        return f"{self._prefix}/{name}.flac"
+
+    def preview_key(self, name: StemName) -> str:
+        return f"{self._prefix}/{name}.preview.mp3"
+
+    def peaks_key(self, name: StemName) -> str:
+        return f"{self._prefix}/{name}.peaks.json"
+
+    @property
+    def _prefix(self) -> str:
+        return self.output_prefix.rstrip("/")
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +66,8 @@ class Stem:
     key: str
     size_bytes: int
     silent: bool
+    preview_key: str
+    peaks_key: str
 
 
 def is_silent(relative_db: float) -> bool:

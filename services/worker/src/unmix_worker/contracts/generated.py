@@ -68,6 +68,8 @@ class StemResult(BaseModel):
     sizeBytes: conint(ge=0, le=9007199254740991)
     format: Literal['flac']
     silent: bool
+    previewKey: constr(min_length=1)
+    peaksKey: constr(min_length=1)
 
 
 class SeparationCompletedV1(BaseModel):

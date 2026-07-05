@@ -1,6 +1,12 @@
 from pathlib import Path
 
-from tests.unit.fakes import FakeNormalizer, FakeSeparator, FakeStorage, RecordingProgress
+from tests.unit.fakes import (
+    FakeNormalizer,
+    FakePreviews,
+    FakeSeparator,
+    FakeStorage,
+    RecordingProgress,
+)
 from unmix_worker.application.separate_track import SeparateTrack
 from unmix_worker.domain.errors import FailureCode, SeparationFailure
 from unmix_worker.domain.model import SeparationTask, StemName
@@ -20,6 +26,7 @@ def make(storage=None, normalizer=None, separator=None) -> SeparateTrack:
         storage=storage or FakeStorage({TASK.input_key}),
         normalizer=normalizer or FakeNormalizer(),
         separator=separator or FakeSeparator(),
+        previews=FakePreviews(),
         max_duration_seconds=600,
     )
 
@@ -33,7 +40,12 @@ def test_uploads_every_stem_and_reports_full_progress(tmp_path: Path) -> None:
     assert isinstance(result, Ok)
     assert result.value.duration_seconds == 240.0
     assert {s.name for s in result.value.stems} == set(StemName)
-    assert set(storage.uploaded) == {f"tracks/track-1/stems/{n}.flac" for n in StemName}
+    assert set(storage.uploaded) == {
+        f"tracks/track-1/stems/{n}{suffix}"
+        for n in StemName
+        for suffix in (".flac", ".preview.mp3", ".peaks.json")
+    }
+    assert storage.uploaded["tracks/track-1/stems/vocals.peaks.json"] == "application/json"
     values = [p for _, p in progress.events]
     assert values == sorted(values)
     assert values[0] == 0 and values[-1] == 100

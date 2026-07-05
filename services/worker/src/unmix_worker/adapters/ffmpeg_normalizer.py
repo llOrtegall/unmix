@@ -32,6 +32,17 @@ class FfmpegNormalizer:
         return Ok(NormalizedAudio(dest, duration))
 
 
+class FfmpegPreviewEncoder:
+    """128 kbps MP3: plays everywhere and streams with plain <audio> elements."""
+
+    def encode(self, src: Path, dest: Path) -> None:
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", str(src), "-c:a", "libmp3lame", "-b:a", "128k",
+             str(dest)],
+            check=True, capture_output=True,
+        )
+
+
 def _last_line(text: str) -> str:
     lines = [line for line in text.strip().splitlines() if line]
     return lines[-1] if lines else "ffmpeg could not decode the file."

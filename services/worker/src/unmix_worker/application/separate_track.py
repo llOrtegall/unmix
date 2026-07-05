@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
 
 from unmix_worker.application.ports import (
     MediaNormalizer,
     ObjectStorage,
+    PreviewEncoder,
     ProgressReporter,
     StemSeparator,
 )
@@ -26,11 +28,13 @@ class SeparateTrack:
         storage: ObjectStorage,
         normalizer: MediaNormalizer,
         separator: StemSeparator,
+        previews: PreviewEncoder,
         max_duration_seconds: float,
     ) -> None:
         self._storage = storage
         self._normalizer = normalizer
         self._separator = separator
+        self._previews = previews
         self._max_duration = max_duration_seconds
 
     def execute(
@@ -74,9 +78,24 @@ class SeparateTrack:
         stems: list[Stem] = []
         for i, item in enumerate(separated):
             step(Stage.UPLOADING, i / len(separated))
+            preview = item.path.with_suffix(".preview.mp3")
+            self._previews.encode(item.path, preview)
+
             key = task.stem_key(item.name)
             size = self._storage.upload(item.path, key, "audio/flac")
-            stems.append(Stem(item.name, key, size, is_silent(item.relative_db)))
+            self._storage.upload(preview, task.preview_key(item.name), "audio/mpeg")
+            peaks = json.dumps({"version": 1, "peaks": item.peaks}, separators=(",", ":"))
+            self._storage.put_bytes(peaks.encode(), task.peaks_key(item.name), "application/json")
+            stems.append(
+                Stem(
+                    item.name,
+                    key,
+                    size,
+                    is_silent(item.relative_db),
+                    task.preview_key(item.name),
+                    task.peaks_key(item.name),
+                )
+            )
         step(Stage.UPLOADING, 1)
 
         return Ok(

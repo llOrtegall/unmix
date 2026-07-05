@@ -9,7 +9,7 @@ from bullmq import Worker
 
 from unmix_worker.adapters.bullmq_consumer import SeparationJobProcessor
 from unmix_worker.adapters.demucs_separator import DemucsSeparator
-from unmix_worker.adapters.ffmpeg_normalizer import FfmpegNormalizer
+from unmix_worker.adapters.ffmpeg_normalizer import FfmpegNormalizer, FfmpegPreviewEncoder
 from unmix_worker.adapters.s3_storage import S3Storage
 from unmix_worker.application.separate_track import SeparateTrack
 from unmix_worker.contracts import SEPARATION_QUEUE
@@ -45,6 +45,7 @@ async def run() -> None:
         ),
         normalizer=FfmpegNormalizer(),
         separator=separator,
+        previews=FfmpegPreviewEncoder(),
         max_duration_seconds=float(env("MAX_DURATION_SECONDS", "600")),
     )
 

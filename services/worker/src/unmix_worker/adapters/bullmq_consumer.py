@@ -101,7 +101,7 @@ def _completed(outcome: SeparationOutcome) -> SeparationCompletedV1:
         durationSeconds=round(outcome.duration_seconds, 3),
         stems=[
             StemResult(name=s.name.value, key=s.key, sizeBytes=s.size_bytes, format="flac",
-                       silent=s.silent)
+                       silent=s.silent, previewKey=s.preview_key, peaksKey=s.peaks_key)
             for s in outcome.stems
         ],
     )

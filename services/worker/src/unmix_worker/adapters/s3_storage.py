@@ -34,3 +34,6 @@ class S3Storage:
             str(src), self._bucket, key, ExtraArgs={"ContentType": content_type}
         )
         return src.stat().st_size
+
+    def put_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        self._client.put_object(Bucket=self._bucket, Key=key, Body=data, ContentType=content_type)
