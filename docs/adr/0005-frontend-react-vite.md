@@ -1,6 +1,6 @@
 # 0005 — Frontend: React + Vite + TypeScript
 
-- **Estado:** Aceptada. Gestión de estado reemplazada por [0017](0017-frontend-clean-zustand.md)
+- **Estado:** Aceptada. Gestión de estado reemplazada por [0017](0017-frontend-clean-zustand.md); wavesurfer reemplazado por [0023](0023-previsualizacion-y-picos.md)
 - **Fecha:** 2026-10-27
 
 ## Contexto

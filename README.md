@@ -6,13 +6,13 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fases 0–3 completadas: API + worker separan canciones de punta a punta ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 4 (frontend). Ver [roadmap](docs/02-roadmap.md).
+Fases 0–4 completadas: web + API + worker funcionan de punta a punta ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 5 (login con Google). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | React + Vite + TypeScript, Zustand, wavesurfer.js |
+| Frontend | React + Vite + TypeScript, Tailwind v4, shadcn/ui, Zustand |
 | API | Node.js + TypeScript, Fastify, Drizzle ORM, zod |
 | Cola | Redis + BullMQ |
 | Worker | Python, Demucs (PyTorch, CPU), ffmpeg |
@@ -50,9 +50,8 @@ docs/             Visión, arquitectura, roadmap, ADRs
 
 ```bash
 cp .env.example .env
-docker compose up -d          # postgres, redis, s3, worker, api
-curl localhost:3000/health
-pnpm install && pnpm --filter @unmix/api e2e -- /ruta/a/cancion.mp3
+docker compose up -d          # postgres, redis, s3, worker, api, web
+open http://localhost:5173    # sube una canción
 ```
 
-Detalles en [api](apps/api/README.md) y [worker](services/worker/README.md). `web` llega en la fase 4.
+Detalles en [web](apps/web/README.md), [api](apps/api/README.md) y [worker](services/worker/README.md).

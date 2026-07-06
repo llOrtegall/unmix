@@ -51,7 +51,7 @@ Historial paginado, más nuevo primero (`?cursor=<createdAt ISO>&limit=20`). Res
   "createdAt": "2026-10-27T15:00:00Z",
   "latestJobId": "uuid",
   "stems": [
-    { "name": "vocals", "url": "https://... (presigned GET, 1 h)", "sizeBytes": 21890660, "silent": false }
+    { "name": "vocals", "url": "FLAC (presigned GET, 1 h)", "previewUrl": "MP3 128 kbps", "peaksUrl": "JSON de picos", "sizeBytes": 21890660, "silent": false }
   ]
 }
 ```
@@ -86,7 +86,8 @@ Progreso (`job.progress`):
 Resultado (`job.returnvalue`, `SeparationCompletedV1`):
 ```json
 { "jobId": "uuid", "trackId": "uuid", "durationSeconds": 297.27,
-  "stems": [{ "name": "piano", "key": "tracks/{trackId}/stems/piano.flac", "sizeBytes": 9808880, "format": "flac", "silent": true }] }
+  "stems": [{ "name": "piano", "key": "tracks/{trackId}/stems/piano.flac", "sizeBytes": 9808880, "format": "flac", "silent": true,
+              "previewKey": "tracks/{trackId}/stems/piano.preview.mp3", "peaksKey": "tracks/{trackId}/stems/piano.peaks.json" }] }
 ```
 
 Fallo (`job.failedReason`, JSON `SeparationFailureV1`):

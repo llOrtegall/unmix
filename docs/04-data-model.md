@@ -44,6 +44,9 @@ erDiagram
     text name "vocals|drums|bass|guitar|piano|other"
     text object_key
     bigint size_bytes
+    boolean silent
+    text preview_key
+    text peaks_key
   }
   outbox {
     uuid id PK
@@ -60,6 +63,8 @@ erDiagram
 ```
 tracks/{trackId}/original.{ext}
 tracks/{trackId}/stems/{name}.flac
+tracks/{trackId}/stems/{name}.preview.mp3
+tracks/{trackId}/stems/{name}.peaks.json
 ```
 
 ## Notas

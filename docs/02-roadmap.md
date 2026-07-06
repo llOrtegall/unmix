@@ -57,6 +57,8 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 **Aceptación:** un usuario no técnico completa el flujo sin ayuda.
 
+**Estado:** ✅ implementada (2026-10-27). Verificada con Playwright: archivo inválido rechazado, subida, progreso en vivo, mixer en 102 s, cambio de idioma, vista móvil, sin errores de consola. Pendiente: prueba con un usuario real.
+
 ## Fase 5 — Autenticación
 
 - Better Auth con Google OAuth.

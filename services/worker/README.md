@@ -38,7 +38,7 @@ Or in Docker: `docker compose up -d worker` (model weights are baked into the im
 | downloading | 0–5 |
 | normalizing (ffmpeg → WAV 44.1 kHz) | 5–10 |
 | separating (Demucs) | 10–90 |
-| uploading (FLAC per stem) | 90–100 |
+| uploading (FLAC + MP3 preview + peaks JSON per stem) | 90–100 |
 
 - Success: return value `SeparationCompletedV1` (stems with key, size, `silent` flag).
 - Business failure (`INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED`): `UnrecoverableError`, no retries. `failedReason` holds a JSON `SeparationFailureV1`.
