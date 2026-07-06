@@ -46,7 +46,6 @@ services:
       interval: 5s
       retries: 20
 
-  # Creates the bucket once storage is ready.
   s3-init:
     image: amazon/aws-cli:latest
     depends_on:
@@ -57,10 +56,14 @@ services:
       AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-unmix-secret}
       AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-unmix}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+    # Creates the bucket and lets the browser upload/download with presigned URLs.
     entrypoint: >
       /bin/sh -c "
       aws --endpoint-url http://s3:8333 s3api head-bucket --bucket $${S3_BUCKET} 2>/dev/null ||
-      aws --endpoint-url http://s3:8333 s3 mb s3://$${S3_BUCKET}
+      aws --endpoint-url http://s3:8333 s3 mb s3://$${S3_BUCKET};
+      aws --endpoint-url http://s3:8333 s3api put-bucket-cors --bucket $${S3_BUCKET}
+      --cors-configuration '{\"CORSRules\":[{\"AllowedOrigins\":[\"'$${WEB_ORIGIN}'\"],\"AllowedMethods\":[\"GET\",\"PUT\",\"HEAD\"],\"AllowedHeaders\":[\"*\"],\"ExposeHeaders\":[\"ETag\",\"Content-Length\"],\"MaxAgeSeconds\":3600}]}'
       "
 
   api:
@@ -104,11 +107,17 @@ services:
     stop_grace_period: 2m
     restart: unless-stopped
 
-  # Phase 4
-  # web:
-  #   build: ./apps/web
-  #   ports: ["5173:5173"]
-  #   depends_on: [api]
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    # Same port as `pnpm dev`, so CORS and WEB_ORIGIN stay identical. Run one or the other.
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

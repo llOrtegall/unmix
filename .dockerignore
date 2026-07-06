@@ -6,3 +6,4 @@
 .git
 .env
 services/worker/spike/output
+**/dist
