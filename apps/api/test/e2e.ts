@@ -1,8 +1,12 @@
 // End-to-end check against a running stack (API + worker + infra).
 // Usage: node --env-file=../../.env test/e2e.ts <audio file> [--keep]
+// Signs in two test users by writing Better Auth sessions straight to Postgres.
+import { randomBytes } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { CreateUploadResponse, JobResponse, ListTracksResponse, TrackDetail } from "@unmix/contracts";
+import { makeSignature } from "better-auth/crypto";
+import pg from "pg";
 
 const API = process.env.E2E_API_URL ?? `http://localhost:${process.env.API_PORT ?? 3000}/api/v1`;
 const TYPES: Record<string, string> = { ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac", ".mp4": "video/mp4" };
@@ -13,18 +17,48 @@ const keep = process.argv.includes("--keep");
 const started = Date.now();
 const log = (msg: string) => console.log(`[${((Date.now() - started) / 1000).toFixed(1).padStart(6)}s] ${msg}`);
 
+const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await db.connect();
+
+/** Upserts a user, creates a session and returns its signed cookie. */
+async function signIn(email: string): Promise<string> {
+  const { rows } = await db.query<{ id: string }>(
+    `insert into users (name, email, email_verified) values ($1, $2, true)
+     on conflict (email) do update set name = excluded.name returning id`,
+    [email.split("@")[0], email],
+  );
+  const token = randomBytes(24).toString("base64url");
+  await db.query(`insert into sessions (user_id, token, expires_at) values ($1, $2, now() + interval '1 hour')`, [
+    rows[0]!.id,
+    token,
+  ]);
+  const signature = await makeSignature(token, process.env.BETTER_AUTH_SECRET!);
+  return `better-auth.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
+}
+
+const owner = await signIn("e2e-owner@unmix.test");
+const stranger = await signIn("e2e-stranger@unmix.test");
+const as = (cookie: string, init: RequestInit = {}): RequestInit => ({ ...init, headers: { ...init.headers, cookie } });
+
 async function call(path: string, init?: RequestInit) {
-  const res = await fetch(`${API}${path}`, init);
+  const res = await fetch(`${API}${path}`, as(owner, init));
   if (!res.ok && res.status !== 204) throw new Error(`${init?.method ?? "GET"} ${path} -> ${res.status} ${await res.text()}`);
   return res;
 }
 
-// 1. Validation errors are mapped to HTTP codes.
-const bad = await fetch(`${API}/uploads`, {
-  method: "POST",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({ filename: "x.exe", contentType: "application/x-msdownload", sizeBytes: 10 }),
-});
+// 1. Auth is required; validation errors are mapped to HTTP codes.
+const anonymous = await fetch(`${API}/tracks`);
+log(`no session -> ${anonymous.status}`);
+if (anonymous.status !== 401) throw new Error("expected 401 without a session");
+
+const bad = await fetch(
+  `${API}/uploads`,
+  as(owner, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ filename: "x.exe", contentType: "application/x-msdownload", sizeBytes: 10 }),
+  }),
+);
 log(`unsupported type -> ${bad.status} ${JSON.stringify(await bad.json())}`);
 
 // 2. Register upload and PUT the file straight to storage.
@@ -41,7 +75,7 @@ const upload = CreateUploadResponse.parse(
 );
 log(`track ${upload.trackId} registered`);
 
-const early = await fetch(`${API}/tracks/${upload.trackId}/jobs`, { method: "POST" });
+const early = await fetch(`${API}/tracks/${upload.trackId}/jobs`, as(owner, { method: "POST" }));
 log(`separation before upload -> ${early.status}`);
 
 const put = await fetch(upload.uploadUrl, { method: "PUT", headers: { "content-type": contentType }, body: await readFile(file) });
@@ -51,7 +85,7 @@ log(`uploaded ${(size / 1_048_576).toFixed(1)} MB`);
 // 3. Request separation and follow it over SSE.
 const job = JobResponse.parse(await (await call(`/tracks/${upload.trackId}/jobs`, { method: "POST" })).json());
 log(`job ${job.jobId} ${job.status}`);
-const twice = await fetch(`${API}/tracks/${upload.trackId}/jobs`, { method: "POST" });
+const twice = await fetch(`${API}/tracks/${upload.trackId}/jobs`, as(owner, { method: "POST" }));
 log(`second request while separating -> ${twice.status}`);
 
 const sse = await call(`/jobs/${job.jobId}/events`);
@@ -97,9 +131,24 @@ log(`zip -> ${zip.headers.get("content-type")} ${(zipBytes / 1_048_576).toFixed(
 const list = ListTracksResponse.parse(await (await call("/tracks?limit=5")).json());
 log(`history: ${list.items.length} tracks, newest ${list.items[0]?.title}`);
 
+// 5. Another user sees none of it.
+const theirs = ListTracksResponse.parse(await (await fetch(`${API}/tracks`, as(stranger))).json());
+const peeks = await Promise.all(
+  [`/tracks/${upload.trackId}`, `/jobs/${job.jobId}`, `/jobs/${job.jobId}/events`, `/tracks/${upload.trackId}/download.zip`].map(
+    async (path) => (await fetch(`${API}${path}`, as(stranger))).status,
+  ),
+);
+const steal = await fetch(`${API}/tracks/${upload.trackId}`, as(stranger, { method: "DELETE" }));
+log(`stranger: ${theirs.items.length} tracks, reads -> ${peeks.join(" ")}, delete -> ${steal.status}`);
+if (theirs.items.some((t) => t.trackId === upload.trackId) || [...peeks, steal.status].some((s) => s !== 404)) {
+  throw new Error("another user can reach this track");
+}
+
 if (!keep) {
   await call(`/tracks/${upload.trackId}`, { method: "DELETE" });
-  const gone = await fetch(`${API}/tracks/${upload.trackId}`);
+  const gone = await fetch(`${API}/tracks/${upload.trackId}`, as(owner));
   log(`deleted -> GET ${gone.status}`);
+  await db.query(`delete from users where email like '%@unmix.test'`);
 }
+await db.end();
 log("e2e OK");
