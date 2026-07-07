@@ -7,6 +7,7 @@ export interface Config {
   maxUploadBytes: number;
   demucsModel: string;
   logLevel: string;
+  auth: { secret: string; baseUrl: string; google: { clientId: string; clientSecret: string } };
 }
 
 function env(name: string, fallback?: string): string {
@@ -17,9 +18,10 @@ function env(name: string, fallback?: string): string {
 
 export function loadConfig(): Config {
   const endpoint = env("S3_ENDPOINT");
+  const webOrigin = env("WEB_ORIGIN", "http://localhost:5173");
   return {
     port: Number(env("API_PORT", "3000")),
-    webOrigin: env("WEB_ORIGIN", "http://localhost:5173"),
+    webOrigin,
     databaseUrl: env("DATABASE_URL"),
     redisUrl: env("REDIS_URL"),
     s3: {
@@ -34,5 +36,11 @@ export function loadConfig(): Config {
     maxUploadBytes: Number(env("MAX_UPLOAD_MB", "200")) * 1_048_576,
     demucsModel: env("DEMUCS_MODEL", "htdemucs_6s"),
     logLevel: env("LOG_LEVEL", "info").toLowerCase(),
+    auth: {
+      secret: env("BETTER_AUTH_SECRET"),
+      // The browser reaches /api/auth through the web origin (Vite or nginx proxy).
+      baseUrl: env("BETTER_AUTH_URL", webOrigin),
+      google: { clientId: env("GOOGLE_CLIENT_ID"), clientSecret: env("GOOGLE_CLIENT_SECRET") },
+    },
   };
 }

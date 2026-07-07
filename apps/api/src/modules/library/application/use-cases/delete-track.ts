@@ -1,7 +1,8 @@
 import type { TransactionManager } from "../../../../shared/kernel/ports.ts";
 import { err, ok, type Result } from "../../../../shared/kernel/result.ts";
-import { type LibraryError, libraryError } from "../../domain/errors.ts";
+import type { LibraryError } from "../../domain/errors.ts";
 import type { ObjectStorage, TrackRepository } from "../ports/index.ts";
+import { findOwnedTrack } from "./find-owned-track.ts";
 
 export class DeleteTrack {
   #tracks: TrackRepository;
@@ -14,11 +15,11 @@ export class DeleteTrack {
     this.#tx = deps.tx;
   }
 
-  async execute(trackId: string): Promise<Result<void, LibraryError>> {
+  async execute(trackId: string, ownerId: string): Promise<Result<void, LibraryError>> {
     const result = await this.#tx.run(async (): Promise<Result<void, LibraryError>> => {
-      const track = await this.#tracks.findById(trackId);
-      if (!track) return err(libraryError("TRACK_NOT_FOUND", "Track not found."));
-      const allowed = track.canDelete();
+      const track = await findOwnedTrack(this.#tracks, trackId, ownerId);
+      if (track.isErr()) return err(track.error);
+      const allowed = track.value.canDelete();
       if (allowed.isErr()) return allowed;
       await this.#tracks.delete(trackId);
       return ok(undefined);

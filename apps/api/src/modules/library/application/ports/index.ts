@@ -10,8 +10,8 @@ export interface TrackRepository {
   findById(id: string): Promise<Track | null>;
   save(track: Track): Promise<void>;
   delete(id: string): Promise<void>;
-  /** Newest first; `cursor` is the `createdAt` of the last item already seen. */
-  list(cursor: Date | null, limit: number): Promise<TrackPage>;
+  /** The owner's tracks, newest first; `cursor` is the `createdAt` of the last item already seen. */
+  list(ownerId: string, cursor: Date | null, limit: number): Promise<TrackPage>;
 }
 
 export interface ObjectStorage {

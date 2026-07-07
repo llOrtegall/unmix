@@ -1,15 +1,21 @@
-import type { GetSeparableTrack } from "../../library/index.ts";
+import type { CheckTrackOwnership, GetSeparableTrack } from "../../library/index.ts";
 import type { TrackCatalog } from "../application/ports/index.ts";
 
 /** Anti-corruption adapter over the library module's public API. */
 export class LibraryTrackCatalog implements TrackCatalog {
-  #query: GetSeparableTrack;
+  #separable: GetSeparableTrack;
+  #ownership: CheckTrackOwnership;
 
-  constructor(query: GetSeparableTrack) {
-    this.#query = query;
+  constructor(deps: { separable: GetSeparableTrack; ownership: CheckTrackOwnership }) {
+    this.#separable = deps.separable;
+    this.#ownership = deps.ownership;
   }
 
-  getSeparableTrack(trackId: string) {
-    return this.#query.execute(trackId);
+  getSeparableTrack(trackId: string, userId: string) {
+    return this.#separable.execute(trackId, userId);
+  }
+
+  isOwnedBy(trackId: string, userId: string) {
+    return this.#ownership.execute(trackId, userId);
   }
 }

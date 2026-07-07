@@ -1,11 +1,14 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyServerOptions } from "fastify";
+import type { Identity } from "./modules/identity/index.ts";
+import { identityRoutes, requireUser } from "./modules/identity/routes.ts";
 import { type LibraryUseCases, libraryRoutes } from "./modules/library/interface/routes.ts";
 import { type SeparationUseCases, separationRoutes } from "./modules/separation/interface/routes.ts";
 
 export interface AppDeps {
   library: LibraryUseCases;
   separation: SeparationUseCases;
+  identity: Identity;
   health: () => Promise<Record<string, "ok" | "error">>;
   webOrigin: string;
 }
@@ -30,8 +33,11 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
     return reply.status(healthy ? 200 : 503).send({ status: healthy ? "ok" : "degraded", checks });
   });
 
+  identityRoutes(app, deps.identity);
+
   app.register(
     async (api) => {
+      api.addHook("preHandler", requireUser(deps.identity));
       libraryRoutes(api, deps.library);
       separationRoutes(api, deps.separation);
     },

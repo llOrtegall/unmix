@@ -5,6 +5,7 @@ import { Track } from "../../domain/track.ts";
 import type { ObjectStorage, TrackRepository } from "../ports/index.ts";
 
 export interface RegisterUploadInput {
+  ownerId: string;
   filename: string;
   contentType: string;
   sizeBytes: number;

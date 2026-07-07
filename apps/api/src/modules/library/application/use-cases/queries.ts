@@ -1,8 +1,9 @@
 import { err, ok, type Result } from "../../../../shared/kernel/result.ts";
-import { type LibraryError, libraryError } from "../../domain/errors.ts";
+import type { LibraryError } from "../../domain/errors.ts";
 import type { StemName } from "../../domain/stem.ts";
 import type { TrackStatus } from "../../domain/track.ts";
 import type { ObjectStorage, TrackRepository } from "../ports/index.ts";
+import { findOwnedTrack } from "./find-owned-track.ts";
 
 export interface TrackSummaryView {
   trackId: string;
@@ -28,10 +29,10 @@ export class GetTrack {
     this.#ttl = deps.downloadUrlTtlSeconds;
   }
 
-  async execute(trackId: string): Promise<Result<TrackDetailView, LibraryError>> {
-    const track = await this.#tracks.findById(trackId);
-    if (!track) return err(libraryError("TRACK_NOT_FOUND", "Track not found."));
-    const t = track.toSnapshot();
+  async execute(trackId: string, ownerId: string): Promise<Result<TrackDetailView, LibraryError>> {
+    const track = await findOwnedTrack(this.#tracks, trackId, ownerId);
+    if (track.isErr()) return err(track.error);
+    const t = track.value.toSnapshot();
     const stems = await Promise.all(
       t.stems.map(async (s) => ({
         name: s.name,
@@ -53,8 +54,8 @@ export class ListTracks {
     this.#tracks = deps.tracks;
   }
 
-  async execute(cursor: string | undefined, limit: number) {
-    const page = await this.#tracks.list(cursor ? new Date(cursor) : null, limit);
+  async execute(ownerId: string, cursor: string | undefined, limit: number) {
+    const page = await this.#tracks.list(ownerId, cursor ? new Date(cursor) : null, limit);
     return {
       items: page.items.map((t) => summary(t.toSnapshot())),
       nextCursor: page.nextCursor?.toISOString() ?? null,

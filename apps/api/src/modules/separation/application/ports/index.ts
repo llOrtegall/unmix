@@ -11,7 +11,9 @@ export interface JobRepository {
 export interface TrackCatalog {
   getSeparableTrack(
     trackId: string,
+    userId: string,
   ): Promise<Result<{ trackId: string; inputKey: string; outputPrefix: string }, { code: string; message: string }>>;
+  isOwnedBy(trackId: string, userId: string): Promise<boolean>;
 }
 
 /** Latest known state of a job in the queue, used to reconcile after downtime. */

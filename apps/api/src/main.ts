@@ -8,7 +8,8 @@ import { DownloadStems } from "./modules/library/application/use-cases/download-
 import { SeparationEventHandlers } from "./modules/library/application/use-cases/on-separation-events.ts";
 import { GetTrack, ListTracks } from "./modules/library/application/use-cases/queries.ts";
 import { RegisterUpload } from "./modules/library/application/use-cases/register-upload.ts";
-import { GetSeparableTrack } from "./modules/library/index.ts";
+import { createIdentity } from "./modules/identity/auth.ts";
+import { CheckTrackOwnership, GetSeparableTrack } from "./modules/library/index.ts";
 import { DrizzleTrackRepository } from "./modules/library/infrastructure/drizzle-track-repository.ts";
 import { S3Storage } from "./modules/library/infrastructure/s3-storage.ts";
 import { GetJob } from "./modules/separation/application/use-cases/get-job.ts";
@@ -51,6 +52,9 @@ const updates = new InMemoryJobUpdates();
 const ids = uuidGenerator;
 const clock = systemClock;
 
+// Identity module
+const identity = createIdentity(db, config.auth);
+
 // Library module
 const tracks = new DrizzleTrackRepository(tx);
 const library = {
@@ -73,18 +77,22 @@ events.on<SeparationFailed>(SEPARATION_FAILED, trackHandlers.onFailed);
 
 // Separation module
 const jobs = new DrizzleJobRepository(tx);
-const catalog = new LibraryTrackCatalog(new GetSeparableTrack({ tracks, storage }));
+const catalog = new LibraryTrackCatalog({
+  separable: new GetSeparableTrack({ tracks, storage }),
+  ownership: new CheckTrackOwnership({ tracks }),
+});
 const lifecycle = new JobLifecycle({ jobs, events, tx, updates, ids, clock });
 const inspector = new BullMqQueueInspector(queue);
 const separation = {
   requestSeparation: new RequestSeparation({ jobs, catalog, events, tx, updates, ids, clock, model: config.demucsModel }),
-  getJob: new GetJob({ jobs }),
+  getJob: new GetJob({ jobs, catalog }),
   updates,
 };
 
 // HTTP
 const app = buildApp(
   {
+    identity,
     library,
     separation,
     webOrigin: config.webOrigin,

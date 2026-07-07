@@ -1,4 +1,4 @@
-import { desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import type { DrizzleTransactions } from "../../../shared/infrastructure/db.ts";
 import type { TrackPage, TrackRepository } from "../application/ports/index.ts";
 import { MediaType } from "../domain/media-type.ts";
@@ -28,6 +28,7 @@ export class DrizzleTrackRepository implements TrackRepository {
     const t = track.toSnapshot();
     const values = {
       id: t.id,
+      userId: t.ownerId,
       title: t.title,
       originalFilename: t.originalFilename,
       contentType: t.mediaType.value,
@@ -62,12 +63,12 @@ export class DrizzleTrackRepository implements TrackRepository {
     await this.#tx.executor().delete(tracks).where(eq(tracks.id, id));
   }
 
-  async list(cursor: Date | null, limit: number): Promise<TrackPage> {
+  async list(ownerId: string, cursor: Date | null, limit: number): Promise<TrackPage> {
     const db = this.#tx.executor();
     const rows = await db
       .select()
       .from(tracks)
-      .where(cursor ? lt(tracks.createdAt, cursor) : undefined)
+      .where(and(eq(tracks.userId, ownerId), cursor ? lt(tracks.createdAt, cursor) : undefined))
       .orderBy(desc(tracks.createdAt))
       .limit(limit + 1);
     const page = rows.slice(0, limit);
@@ -84,6 +85,7 @@ export class DrizzleTrackRepository implements TrackRepository {
 function toDomain(row: TrackRow, stemRows: StemRow[]): Track {
   return Track.restore({
     id: row.id,
+    ownerId: row.userId,
     title: row.title,
     originalFilename: row.originalFilename,
     mediaType: MediaType.restore(row.contentType),

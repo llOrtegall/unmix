@@ -11,10 +11,10 @@ export class RequestSeparation {
     this.#deps = deps;
   }
 
-  async execute(trackId: string): Promise<Result<JobView, AppError>> {
+  async execute(trackId: string, userId: string): Promise<Result<JobView, AppError>> {
     const { jobs, catalog, events, tx, updates, ids, clock, model } = this.#deps;
     const result = await tx.run(async (): Promise<Result<JobView, AppError>> => {
-      const track = await catalog.getSeparableTrack(trackId);
+      const track = await catalog.getSeparableTrack(trackId, userId);
       if (track.isErr()) return err(track.error);
 
       const job = SeparationJob.request({

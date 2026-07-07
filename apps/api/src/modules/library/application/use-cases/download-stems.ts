@@ -2,6 +2,7 @@ import type { Readable } from "node:stream";
 import { err, ok, type Result } from "../../../../shared/kernel/result.ts";
 import { type LibraryError, libraryError } from "../../domain/errors.ts";
 import type { ObjectStorage, TrackRepository } from "../ports/index.ts";
+import { findOwnedTrack } from "./find-owned-track.ts";
 
 export interface StemArchive {
   filename: string;
@@ -18,10 +19,10 @@ export class DownloadStems {
     this.#storage = deps.storage;
   }
 
-  async execute(trackId: string): Promise<Result<StemArchive, LibraryError>> {
-    const track = await this.#tracks.findById(trackId);
-    if (!track) return err(libraryError("TRACK_NOT_FOUND", "Track not found."));
-    const t = track.toSnapshot();
+  async execute(trackId: string, ownerId: string): Promise<Result<StemArchive, LibraryError>> {
+    const track = await findOwnedTrack(this.#tracks, trackId, ownerId);
+    if (track.isErr()) return err(track.error);
+    const t = track.value.toSnapshot();
     if (t.status !== "completed") {
       return err(libraryError("INVALID_STATE", "Stems are not ready yet."));
     }

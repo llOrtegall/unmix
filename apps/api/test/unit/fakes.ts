@@ -46,11 +46,15 @@ export class RecordingUpdates implements JobUpdates {
   }
 }
 
-export function catalog(ready: boolean): TrackCatalog {
+/** Every track belongs to `owner`. */
+export function catalog(ready: boolean, owner = "u1"): TrackCatalog {
   return {
-    getSeparableTrack: async (trackId) =>
-      ready
+    getSeparableTrack: async (trackId, userId) => {
+      if (userId !== owner) return err({ code: "TRACK_NOT_FOUND", message: "not found" });
+      return ready
         ? ok({ trackId, inputKey: `tracks/${trackId}/original.mp3`, outputPrefix: `tracks/${trackId}/stems` })
-        : err({ code: "UPLOAD_MISSING", message: "not uploaded" }),
+        : err({ code: "UPLOAD_MISSING", message: "not uploaded" });
+    },
+    isOwnedBy: async (_trackId, userId) => userId === owner,
   };
 }

@@ -8,6 +8,7 @@ export type TrackStatus = "awaiting_upload" | "uploaded" | "separating" | "compl
 
 export interface TrackProps {
   id: string;
+  ownerId: string;
   title: string;
   originalFilename: string;
   mediaType: MediaType;
@@ -22,6 +23,7 @@ export interface TrackProps {
 
 export interface RegisterTrack {
   id: string;
+  ownerId: string;
   filename: string;
   contentType: string;
   sizeBytes: number;
@@ -47,6 +49,7 @@ export class Track extends AggregateRoot {
     return ok(
       new Track({
         id: input.id,
+        ownerId: input.ownerId,
         title: titleFrom(input.filename),
         originalFilename: input.filename,
         mediaType: mediaType.value,
@@ -67,6 +70,10 @@ export class Track extends AggregateRoot {
 
   get id(): string {
     return this.#props.id;
+  }
+
+  isOwnedBy(userId: string): boolean {
+    return this.#props.ownerId === userId;
   }
 
   get stemsPrefix(): string {

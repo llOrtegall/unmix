@@ -22,34 +22,34 @@ export function libraryRoutes(app: FastifyInstance, uc: LibraryUseCases): void {
   app.post("/uploads", async (req, reply) => {
     const input = parse(CreateUploadRequest, req.body);
     if (input.isErr()) return sendError(reply, input.error);
-    const result = await uc.registerUpload.execute(input.value);
+    const result = await uc.registerUpload.execute({ ...input.value, ownerId: req.userId });
     return result.isOk() ? reply.status(201).send(result.value) : sendError(reply, result.error);
   });
 
   app.get("/tracks", async (req, reply) => {
     const query = parse(ListTracksQuery, req.query);
     if (query.isErr()) return sendError(reply, query.error);
-    return uc.listTracks.execute(query.value.cursor, query.value.limit);
+    return uc.listTracks.execute(req.userId, query.value.cursor, query.value.limit);
   });
 
   app.get("/tracks/:trackId", async (req, reply) => {
     const params = parse(TrackParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.getTrack.execute(params.value.trackId);
+    const result = await uc.getTrack.execute(params.value.trackId, req.userId);
     return result.isOk() ? result.value : sendError(reply, result.error);
   });
 
   app.delete("/tracks/:trackId", async (req, reply) => {
     const params = parse(TrackParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.deleteTrack.execute(params.value.trackId);
+    const result = await uc.deleteTrack.execute(params.value.trackId, req.userId);
     return result.isOk() ? reply.status(204).send() : sendError(reply, result.error);
   });
 
   app.get("/tracks/:trackId/download.zip", async (req, reply) => {
     const params = parse(TrackParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.downloadStems.execute(params.value.trackId);
+    const result = await uc.downloadStems.execute(params.value.trackId, req.userId);
     if (result.isErr()) return sendError(reply, result.error);
 
     // FLAC is already compressed: store entries without deflate.

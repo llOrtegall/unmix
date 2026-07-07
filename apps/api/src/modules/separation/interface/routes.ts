@@ -30,14 +30,14 @@ export function separationRoutes(app: FastifyInstance, uc: SeparationUseCases): 
   app.post("/tracks/:trackId/jobs", async (req, reply) => {
     const params = parse(TrackParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.requestSeparation.execute(params.value.trackId);
+    const result = await uc.requestSeparation.execute(params.value.trackId, req.userId);
     return result.isOk() ? reply.status(202).send(toJobResponse(result.value)) : sendError(reply, result.error);
   });
 
   app.get("/jobs/:jobId", async (req, reply) => {
     const params = parse(JobParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.getJob.execute(params.value.jobId);
+    const result = await uc.getJob.execute(params.value.jobId, req.userId);
     return result.isOk() ? toJobResponse(result.value) : sendError(reply, result.error);
   });
 
@@ -45,7 +45,7 @@ export function separationRoutes(app: FastifyInstance, uc: SeparationUseCases): 
   app.get("/jobs/:jobId/events", async (req, reply) => {
     const params = parse(JobParams, req.params);
     if (params.isErr()) return sendError(reply, params.error);
-    const current = await uc.getJob.execute(params.value.jobId);
+    const current = await uc.getJob.execute(params.value.jobId, req.userId);
     if (current.isErr()) return sendError(reply, current.error);
 
     reply.hijack();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Track } from "../../src/modules/library/domain/track.ts";
 
-const base = { id: "t1", filename: "My Song.mp3", contentType: "audio/mpeg", sizeBytes: 1000, maxSizeBytes: 5000, now: new Date() };
+const base = { id: "t1", ownerId: "u1", filename: "My Song.mp3", contentType: "audio/mpeg", sizeBytes: 1000, maxSizeBytes: 5000, now: new Date() };
 const stems = [{ name: "vocals" as const, key: "k/vocals.flac", sizeBytes: 10, silent: false, previewKey: "p", peaksKey: "w" }];
 
 describe("Track", () => {
@@ -10,6 +10,13 @@ describe("Track", () => {
     expect(t.title).toBe("My Song");
     expect(t.inputKey).toBe("tracks/t1/original.mp3");
     expect(t.status).toBe("awaiting_upload");
+    expect(t.ownerId).toBe("u1");
+  });
+
+  it("belongs to the user who registered it", () => {
+    const track = Track.register(base)._unsafeUnwrap();
+    expect(track.isOwnedBy("u1")).toBe(true);
+    expect(track.isOwnedBy("u2")).toBe(false);
   });
 
   it("rejects unsupported types and oversized files", () => {

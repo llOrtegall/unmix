@@ -1,10 +1,13 @@
 import { bigint, doublePrecision, index, boolean, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { users } from "../../identity/index.ts";
 
 export const tracks = pgTable(
   "tracks",
   {
     id: uuid("id").primaryKey(),
-    userId: uuid("user_id"), // phase 5
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     originalFilename: text("original_filename").notNull(),
     contentType: text("content_type").notNull(),
@@ -15,7 +18,7 @@ export const tracks = pgTable(
     latestJobId: uuid("latest_job_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
-  (t) => [index("tracks_created_at_idx").on(t.createdAt)],
+  (t) => [index("tracks_user_created_at_idx").on(t.userId, t.createdAt)],
 );
 
 export const stems = pgTable(

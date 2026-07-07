@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { GetJob } from "../../src/modules/separation/application/use-cases/get-job.ts";
 import { JobLifecycle } from "../../src/modules/separation/application/use-cases/job-lifecycle.ts";
 import { ReconcileJobs } from "../../src/modules/separation/application/use-cases/reconcile-jobs.ts";
 import { RequestSeparation } from "../../src/modules/separation/application/use-cases/request-separation.ts";
@@ -15,6 +16,7 @@ function setup(ready = true) {
     events,
     updates,
     request: new RequestSeparation({ ...deps, catalog: catalog(ready), model: "htdemucs_6s" }),
+    getJob: new GetJob({ jobs, catalog: catalog(ready) }),
     lifecycle: new JobLifecycle(deps),
   };
 }
@@ -24,7 +26,7 @@ const result = { durationSeconds: 60, stems: [{ name: "vocals" as const, key: "k
 describe("RequestSeparation", () => {
   it("creates a queued job and publishes separation.requested", async () => {
     const s = setup();
-    const job = (await s.request.execute("t1"))._unsafeUnwrap();
+    const job = (await s.request.execute("t1", "u1"))._unsafeUnwrap();
     expect(job.status).toBe("queued");
     expect(s.events.events.map((e) => e.type)).toEqual(["separation.requested"]);
     expect(s.updates.published).toHaveLength(1);
@@ -32,16 +34,31 @@ describe("RequestSeparation", () => {
 
   it("passes catalog errors through without creating a job", async () => {
     const s = setup(false);
-    expect((await s.request.execute("t1"))._unsafeUnwrapErr().code).toBe("UPLOAD_MISSING");
+    expect((await s.request.execute("t1", "u1"))._unsafeUnwrapErr().code).toBe("UPLOAD_MISSING");
     expect(s.jobs.rows.size).toBe(0);
     expect(s.events.events).toHaveLength(0);
+  });
+
+  it("does not separate someone else's track", async () => {
+    const s = setup();
+    expect((await s.request.execute("t1", "u2"))._unsafeUnwrapErr().code).toBe("TRACK_NOT_FOUND");
+    expect(s.jobs.rows.size).toBe(0);
+  });
+});
+
+describe("GetJob", () => {
+  it("hides jobs of tracks the user does not own", async () => {
+    const s = setup();
+    const job = (await s.request.execute("t1", "u1"))._unsafeUnwrap();
+    expect((await s.getJob.execute(job.id, "u1"))._unsafeUnwrap().id).toBe(job.id);
+    expect((await s.getJob.execute(job.id, "u2"))._unsafeUnwrapErr().code).toBe("JOB_NOT_FOUND");
   });
 });
 
 describe("JobLifecycle", () => {
   it("is idempotent for duplicate completions", async () => {
     const s = setup();
-    const job = (await s.request.execute("t1"))._unsafeUnwrap();
+    const job = (await s.request.execute("t1", "u1"))._unsafeUnwrap();
     await s.lifecycle.recordProgress(job.id, "separating", 50);
     await s.lifecycle.complete(job.id, result);
     await s.lifecycle.complete(job.id, result);
@@ -60,8 +77,8 @@ describe("JobLifecycle", () => {
 describe("ReconcileJobs", () => {
   it("applies outcomes that happened while the API was down", async () => {
     const s = setup();
-    const a = (await s.request.execute("t1"))._unsafeUnwrap();
-    const b = (await s.request.execute("t2"))._unsafeUnwrap();
+    const a = (await s.request.execute("t1", "u1"))._unsafeUnwrap();
+    const b = (await s.request.execute("t2", "u1"))._unsafeUnwrap();
     const states: Record<string, QueueJobState> = {
       [a.id]: { state: "completed", result },
       [b.id]: { state: "failed", failure: { code: "INVALID_MEDIA", message: "bad" } },
