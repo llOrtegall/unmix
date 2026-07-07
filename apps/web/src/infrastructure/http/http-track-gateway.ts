@@ -7,9 +7,11 @@ import type { Track, TrackSummary } from "../../domain/track.ts";
 /** Talks to /api/v1 and maps DTOs (contracts) to domain models. */
 export class HttpTrackGateway implements TrackGateway {
   #base: string;
+  #onUnauthorized: () => void;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, options: { onUnauthorized?: () => void } = {}) {
     this.#base = baseUrl;
+    this.#onUnauthorized = options.onUnauthorized ?? (() => {});
   }
 
   createUpload(input: { filename: string; contentType: string; sizeBytes: number }) {
@@ -67,6 +69,7 @@ export class HttpTrackGateway implements TrackGateway {
     } catch {
       return { ok: false, error: { code: "NETWORK_ERROR", message: "" } };
     }
+    if (res.status === 401) this.#onUnauthorized();
     if (!res.ok) {
       const body = ApiError.safeParse(await res.json().catch(() => null));
       return { ok: false, error: body.success ? body.data.error : { code: "INTERNAL_ERROR", message: res.statusText } };

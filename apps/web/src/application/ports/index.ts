@@ -1,6 +1,7 @@
 import type { Job } from "../../domain/job.ts";
 import type { StemName } from "../../domain/stem.ts";
 import type { Track, TrackPage } from "../../domain/track.ts";
+import type { User } from "../../domain/user.ts";
 
 /** Business error from the API, or a network failure (`NETWORK_ERROR`). */
 export interface AppError {
@@ -18,6 +19,16 @@ export interface TrackGateway {
   deleteTrack(trackId: string): Promise<Outcome<void>>;
   getJob(jobId: string): Promise<Outcome<Job>>;
   zipUrl(trackId: string): string;
+}
+
+export interface SessionGateway {
+  /** The signed-in user, or null without a session. */
+  current(): Promise<Outcome<User | null>>;
+  /** Leaves the page for Google's consent screen; comes back to `returnTo`. */
+  signInWithGoogle(returnTo: string): Promise<Outcome<void>>;
+  signOut(): Promise<Outcome<void>>;
+  /** Fires when the API rejects a request because the session is gone. */
+  onExpired(listener: () => void): () => void;
 }
 
 export interface UploadGateway {
