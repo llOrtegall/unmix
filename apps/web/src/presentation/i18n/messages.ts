@@ -3,6 +3,11 @@ const es = {
   "app.library": "Biblioteca",
   "app.language": "Idioma",
 
+  "auth.title": "Inicia sesión para empezar",
+  "auth.subtitle": "Tus canciones y stems se guardan en una biblioteca privada, solo para ti.",
+  "auth.google": "Continuar con Google",
+  "auth.signOut": "Cerrar sesión",
+
   "upload.title": "Suelta tu canción aquí",
   "upload.subtitle": "o haz clic para elegir un archivo de audio o video",
   "upload.formats": "MP3, WAV, FLAC, M4A, OGG, MP4, MOV, WEBM, MKV · hasta {mb} MB · máximo 10 minutos",
@@ -65,6 +70,8 @@ const es = {
   "error.TRACK_BUSY": "Esta canción ya se está procesando.",
   "error.NETWORK_ERROR": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
   "error.UPLOAD_CANCELLED": "Subida cancelada.",
+  "error.UNAUTHORIZED": "Tu sesión terminó. Vuelve a iniciar sesión.",
+  "error.AUTH_FAILED": "No pudimos iniciar sesión con Google. Inténtalo de nuevo.",
   "error.generic": "Algo salió mal. Inténtalo de nuevo.",
 } as const;
 
@@ -74,6 +81,11 @@ const en: Record<MessageKey, string> = {
   "app.tagline": "Split any song into its instruments",
   "app.library": "Library",
   "app.language": "Language",
+
+  "auth.title": "Sign in to get started",
+  "auth.subtitle": "Your songs and stems are kept in a private library, just for you.",
+  "auth.google": "Continue with Google",
+  "auth.signOut": "Sign out",
 
   "upload.title": "Drop your song here",
   "upload.subtitle": "or click to choose an audio or video file",
@@ -137,6 +149,8 @@ const en: Record<MessageKey, string> = {
   "error.TRACK_BUSY": "This song is already being processed.",
   "error.NETWORK_ERROR": "Can't reach the server. Check your connection and try again.",
   "error.UPLOAD_CANCELLED": "Upload cancelled.",
+  "error.UNAUTHORIZED": "Your session ended. Please sign in again.",
+  "error.AUTH_FAILED": "We couldn't sign you in with Google. Please try again.",
   "error.generic": "Something went wrong. Please try again.",
 };
 

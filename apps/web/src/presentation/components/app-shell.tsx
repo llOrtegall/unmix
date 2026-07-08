@@ -1,8 +1,10 @@
+import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { type Locale } from "@/presentation/i18n/messages.ts";
 import { useLocale, useT } from "@/presentation/i18n/use-t.ts";
 import { cn } from "@/presentation/lib/utils.ts";
+import { useSession } from "@/presentation/session.tsx";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
@@ -16,9 +18,35 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="hidden text-xs text-muted-foreground sm:block">{t("app.tagline")}</div>
           </div>
         </Link>
-        <LanguageSwitch />
+        <div className="flex items-center gap-3">
+          <LanguageSwitch />
+          <AccountMenu />
+        </div>
       </header>
       <main className="flex-1 pb-16">{children}</main>
+    </div>
+  );
+}
+
+function AccountMenu() {
+  const { state, signOut } = useSession();
+  const t = useT();
+  if (state.status !== "signed-in") return null;
+  const { name, email, imageUrl } = state.user;
+  return (
+    <div className="flex items-center gap-1">
+      <span title={`${name} · ${email}`} className="flex size-8 items-center justify-center overflow-hidden rounded-full border bg-secondary text-xs font-medium uppercase">
+        {imageUrl ? <img src={imageUrl} alt="" referrerPolicy="no-referrer" className="size-full object-cover" /> : name.slice(0, 1)}
+      </span>
+      <button
+        type="button"
+        onClick={() => void signOut()}
+        title={t("auth.signOut")}
+        aria-label={t("auth.signOut")}
+        className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <LogOut className="size-4" />
+      </button>
     </div>
   );
 }
