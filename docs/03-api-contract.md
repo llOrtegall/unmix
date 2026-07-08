@@ -2,6 +2,12 @@
 
 Base: `/api/v1`. JSON. Schemas en `packages/contracts/src/http/api.ts` (zod). Errores con forma `{ "error": { "code": string, "message": string } }`.
 
+## Autenticación
+
+Todas las rutas de `/api/v1` exigen la cookie de sesión de Better Auth. Sin ella responden `401 UNAUTHORIZED` ([ADR 0025](adr/0025-sesiones-y-propiedad.md)). Cada usuario solo ve sus tracks y jobs. Los ajenos responden `404`, igual que los que no existen.
+
+Better Auth atiende `/api/auth/*`. El web usa `POST /api/auth/sign-in/social` (`{ "provider": "google", "callbackURL": "/" }`), `GET /api/auth/get-session` y `POST /api/auth/sign-out`.
+
 ## Subida
 
 ### `POST /uploads`

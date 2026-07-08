@@ -28,3 +28,4 @@ Formato MADR corto. Una decisión por archivo. Para cambiar una decisión, crear
 | [0022](0022-typescript-sin-build.md) | API en TypeScript sin paso de build |
 | [0023](0023-previsualizacion-y-picos.md) | Previsualización MP3, picos de onda y reproducción con `<audio>` |
 | [0024](0024-frontend-ui-e-i18n.md) | Frontend: estudio oscuro, shadcn/ui, Tailwind v4 e i18n propio |
+| [0025](0025-sesiones-y-propiedad.md) | Sesiones en el mismo origen y propiedad de tracks |

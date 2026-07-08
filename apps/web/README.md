@@ -4,9 +4,9 @@ React 19 + Vite + TypeScript 7 SPA. Clean Architecture ([ADR 0017](../../docs/ad
 
 ```
 src/
-  domain/          Track, Job, Stem, mix rules (mute/solo/gain), upload policy
-  application/     ports (TrackGateway, UploadGateway, JobEventsGateway, PeaksGateway, AudioEngine) + use cases
-  infrastructure/  fetch + zod (contracts), XHR upload with progress, EventSource, <audio> engine
+  domain/          Track, Job, Stem, User, mix rules (mute/solo/gain), upload policy
+  application/     ports (SessionGateway, TrackGateway, UploadGateway, JobEventsGateway, PeaksGateway, AudioEngine) + use cases
+  infrastructure/  Better Auth client, fetch + zod (contracts), XHR upload with progress, EventSource, <audio> engine
   presentation/    React: pages, components, shadcn ui, Zustand stores, i18n
   container.ts     composition root
   main.tsx         entry: provides the container through ServicesProvider
@@ -23,6 +23,10 @@ pnpm build      # static build in dist/
 ```
 
 Docker: `docker compose up -d web` serves the build with nginx on port 5173 and proxies `/api` to the API. Stop `pnpm dev` first: both use 5173.
+
+## Sign-in
+
+`SessionProvider` loads the session once and shows the Google sign-in page when there is none. A 401 from the API signs the UI out. Sessions live in a same-origin cookie set by Better Auth under `/api/auth` ([ADR 0025](../../docs/adr/0025-sesiones-y-propiedad.md)).
 
 ## Playback
 

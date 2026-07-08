@@ -11,6 +11,7 @@ src/
   shared/kernel/          Result, DomainEvent/AggregateRoot, ports (Clock, IdGenerator, TransactionManager, EventPublisher)
   shared/infrastructure/  config, Drizzle + AsyncLocalStorage transactions, outbox publisher/relay
   shared/interface/       zod parsing and error -> HTTP mapping
+  modules/identity/       Better Auth (Google), /api/auth routes, session guard for /api/v1
   modules/library/        Track aggregate: uploads, history, detail, ZIP, delete
   modules/separation/     SeparationJob aggregate: request, lifecycle, SSE, queue adapters, reconciliation
 ```
@@ -21,14 +22,18 @@ src/
 pnpm dev                 # run with --watch against ../../.env
 pnpm check               # typecheck + dependency rules + unit tests
 pnpm db:generate         # new migration after editing a schema.ts (applied on startup)
-pnpm e2e -- /path/to/song.mp3   # full flow against a running stack
+pnpm e2e -- /path/to/song.mp3   # full flow against a running stack, as two test users
 ```
 
 Docker: `docker compose up -d api` (port 3000).
 
+## Auth
+
+Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sesiones-y-propiedad.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session. A track that belongs to someone else answers 404, and so do its jobs.
+
 ## How a separation flows
 
-1. `POST /api/v1/uploads` creates a `Track` (`awaiting_upload`) and returns a presigned PUT URL.
+1. `POST /api/v1/uploads` creates a `Track` (`awaiting_upload`) owned by the signed-in user and returns a presigned PUT URL.
 2. The browser uploads straight to S3.
 3. `POST /api/v1/tracks/:id/jobs` checks the upload exists, creates a `SeparationJob` and, in one transaction, writes `separation.requested` to the outbox. The library module's in-process handler moves the track to `separating`.
 4. The outbox relay publishes `separation.requested.v1` to BullMQ (job id = separation job id, so re-publishing is harmless).

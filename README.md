@@ -6,7 +6,7 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fases 0–4 completadas: web + API + worker funcionan de punta a punta ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 5 (login con Google). Ver [roadmap](docs/02-roadmap.md).
+Fases 0–4 completadas: web + API + worker funcionan de punta a punta ([resultados del spike](docs/spike-demucs.md)). Fase 5 (login con Google, bibliotecas privadas) implementada; falta la prueba con dos cuentas reales. Siguiente: fase 6 (pulido). Ver [roadmap](docs/02-roadmap.md).
 
 ## Stack
 

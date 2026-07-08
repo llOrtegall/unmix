@@ -66,6 +66,8 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 **Aceptación:** dos cuentas de Google ven bibliotecas distintas.
 
+**Estado:** 🟡 implementada (2026-10-27), [ADR 0025](adr/0025-sesiones-y-propiedad.md). E2E de la API con dos usuarios de prueba: 401 sin sesión, y el segundo usuario recibe 404 en lista, detalle, job, SSE, ZIP y borrado. UI verificada con Playwright (login, biblioteca, cerrar sesión). Pendiente: login real con dos cuentas de Google.
+
 ## Fase 6 — Pulido para cliente
 
 - Mensajes de error amigables, estados vacíos, skeletons.
