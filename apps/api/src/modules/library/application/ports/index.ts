@@ -12,6 +12,10 @@ export interface TrackRepository {
   delete(id: string): Promise<void>;
   /** The owner's tracks, newest first; `cursor` is the `createdAt` of the last item already seen. */
   list(ownerId: string, cursor: Date | null, limit: number): Promise<TrackPage>;
+  /** Ids of tracks still waiting for their file since before `before`. */
+  findAbandonedUploads(before: Date): Promise<string[]>;
+  /** The subset of `ids` that still have a row. */
+  existingIds(ids: string[]): Promise<Set<string>>;
 }
 
 export interface ObjectStorage {
@@ -20,4 +24,6 @@ export interface ObjectStorage {
   exists(key: string): Promise<boolean>;
   read(key: string): Promise<Readable>;
   deletePrefix(prefix: string): Promise<void>;
+  /** Immediate "folders" under `prefix`, e.g. `tracks/<id>/`. */
+  listPrefixes(prefix: string): Promise<string[]>;
 }

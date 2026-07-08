@@ -80,6 +80,21 @@ export class DrizzleTrackRepository implements TrackRepository {
       nextCursor: rows.length > limit ? (page.at(-1)?.createdAt ?? null) : null,
     };
   }
+
+  async findAbandonedUploads(before: Date): Promise<string[]> {
+    const rows = await this.#tx
+      .executor()
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(and(eq(tracks.status, "awaiting_upload"), lt(tracks.createdAt, before)));
+    return rows.map((r) => r.id);
+  }
+
+  async existingIds(ids: string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const rows = await this.#tx.executor().select({ id: tracks.id }).from(tracks).where(inArray(tracks.id, ids));
+    return new Set(rows.map((r) => r.id));
+  }
 }
 
 function toDomain(row: TrackRow, stemRows: StemRow[]): Track {

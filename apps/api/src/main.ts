@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { buildApp } from "./app.ts";
+import { CollectGarbage } from "./modules/library/application/use-cases/collect-garbage.ts";
 import { DeleteTrack } from "./modules/library/application/use-cases/delete-track.ts";
 import { DownloadStems } from "./modules/library/application/use-cases/download-stems.ts";
 import { SeparationEventHandlers } from "./modules/library/application/use-cases/on-separation-events.ts";
@@ -122,11 +123,21 @@ const reconciled = await new ReconcileJobs({ jobs, queue: inspector, lifecycle }
 app.log.info(reconciled, "reconciled unfinished jobs");
 relay.start();
 
+const garbage = new CollectGarbage({ tracks, storage, clock, abandonAfterMs: 24 * 3_600_000 });
+const collectGarbage = () =>
+  garbage.execute().then(
+    (result) => app.log.info(result, "garbage collected"),
+    (error: unknown) => app.log.error({ err: error }, "garbage collection failed"),
+  );
+void collectGarbage();
+const garbageTimer = setInterval(collectGarbage, 3_600_000);
+
 await app.listen({ port: config.port, host: "0.0.0.0" });
 
 const shutdown = async () => {
   app.log.info("shutting down");
   relay.stop();
+  clearInterval(garbageTimer);
   await app.close();
   await queueEvents.close();
   await queue.close();

@@ -73,6 +73,19 @@ export class S3Storage implements ObjectStorage {
     } while (token);
   }
 
+  async listPrefixes(prefix: string): Promise<string[]> {
+    const prefixes: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await this.#client.send(
+        new ListObjectsV2Command({ Bucket: this.#bucket, Prefix: prefix, Delimiter: "/", ContinuationToken: token }),
+      );
+      for (const p of page.CommonPrefixes ?? []) if (p.Prefix) prefixes.push(p.Prefix);
+      token = page.NextContinuationToken;
+    } while (token);
+    return prefixes;
+  }
+
   async ping(): Promise<void> {
     await this.#client.send(new ListObjectsV2Command({ Bucket: this.#bucket, MaxKeys: 1 }));
   }
