@@ -89,5 +89,5 @@ export function toJob(j: z.infer<typeof JobResponse>): Job {
 }
 
 function toSummary(t: TrackSummaryDto): TrackSummary {
-  return { id: t.trackId, title: t.title, status: t.status, durationSeconds: t.durationSeconds, createdAt: new Date(t.createdAt) };
+  return { id: t.trackId, title: t.title, status: t.status, durationSeconds: t.durationSeconds, credit: t.credit, createdAt: new Date(t.createdAt) };
 }

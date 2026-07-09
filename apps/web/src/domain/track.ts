@@ -7,6 +7,8 @@ export interface TrackSummary {
   title: string;
   status: TrackStatus;
   durationSeconds: number | null;
+  /** Attribution for licensed content; set only on the demo song. */
+  credit: string | null;
   createdAt: Date;
 }
 

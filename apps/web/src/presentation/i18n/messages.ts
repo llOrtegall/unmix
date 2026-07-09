@@ -8,6 +8,8 @@ const es = {
   "auth.google": "Continuar con Google",
   "auth.signOut": "Cerrar sesión",
 
+  "demo.badge": "Demo",
+
   "upload.title": "Suelta tu canción aquí",
   "upload.subtitle": "o haz clic para elegir un archivo de audio o video",
   "upload.formats": "MP3, WAV, FLAC, M4A, OGG, MP4, MOV, WEBM, MKV · hasta {mb} MB · máximo 10 minutos",
@@ -86,6 +88,8 @@ const en: Record<MessageKey, string> = {
   "auth.subtitle": "Your songs and stems are kept in a private library, just for you.",
   "auth.google": "Continue with Google",
   "auth.signOut": "Sign out",
+
+  "demo.badge": "Demo",
 
   "upload.title": "Drop your song here",
   "upload.subtitle": "or click to choose an audio or video file",

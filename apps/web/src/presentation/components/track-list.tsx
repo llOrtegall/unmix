@@ -16,6 +16,7 @@ import {
 import { Button } from "@/presentation/components/ui/button.tsx";
 import { useLocale, useT } from "@/presentation/i18n/use-t.ts";
 import { formatDuration } from "@/presentation/lib/utils.ts";
+import { DemoBadge } from "@/presentation/components/demo-credit.tsx";
 import { useServices } from "@/presentation/services.tsx";
 
 export function TrackList() {
@@ -103,7 +104,10 @@ function TrackRow({ item, onDelete }: { item: TrackSummary; onDelete: () => void
           <Music2 className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{item.title}</p>
+          <p className="flex items-center gap-2 font-medium">
+            <span className="truncate">{item.title}</span>
+            {item.credit && <DemoBadge />}
+          </p>
           <p className="text-xs text-muted-foreground">
             {formatDuration(item.durationSeconds)} · {date}
           </p>

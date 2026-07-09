@@ -10,6 +10,7 @@ import { Button } from "@/presentation/components/ui/button.tsx";
 import { Card } from "@/presentation/components/ui/card.tsx";
 import { errorMessage, useT } from "@/presentation/i18n/use-t.ts";
 import { formatDuration } from "@/presentation/lib/utils.ts";
+import { Credit, DemoBadge } from "@/presentation/components/demo-credit.tsx";
 import { useServices } from "@/presentation/services.tsx";
 
 export function TrackPage({ id }: { id: string }) {
@@ -55,8 +56,12 @@ export function TrackPage({ id }: { id: string }) {
         <>
           <header className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{track.title}</h1>
+              <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                <span className="truncate">{track.title}</span>
+                {track.credit && <DemoBadge />}
+              </h1>
               <p className="mt-1 text-sm text-muted-foreground">{formatDuration(track.durationSeconds)}</p>
+              {track.credit && <Credit text={track.credit} />}
             </div>
             <StatusBadge status={track.status} />
           </header>
