@@ -14,7 +14,8 @@
     "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
     "check": "pnpm typecheck && pnpm lint:deps && pnpm test",
     "db:generate": "drizzle-kit generate",
-    "e2e": "node --env-file=../../.env test/e2e.ts"
+    "e2e": "node --env-file=../../.env test/e2e.ts",
+    "demo:seed": "node --env-file=../../.env scripts/seed-demo.ts ../../assets/demo/la.mp3 --title \"La\" --credit \"Music: La by Shane Ivers - https://www.silvermansound.com\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1158.0",

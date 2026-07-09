@@ -1,12 +1,11 @@
 // End-to-end check against a running stack (API + worker + infra).
 // Usage: node --env-file=../../.env test/e2e.ts <audio file> [--keep]
 // Signs in two test users by writing Better Auth sessions straight to Postgres.
-import { randomBytes } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { CreateUploadResponse, JobResponse, ListTracksResponse, TrackDetail } from "@unmix/contracts";
-import { makeSignature } from "better-auth/crypto";
 import pg from "pg";
+import { signInAs } from "../scripts/test-session.ts";
 
 const API = process.env.E2E_API_URL ?? `http://localhost:${process.env.API_PORT ?? 3000}/api/v1`;
 const TYPES: Record<string, string> = { ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac", ".mp4": "video/mp4" };
@@ -20,24 +19,8 @@ const log = (msg: string) => console.log(`[${((Date.now() - started) / 1000).toF
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
 
-/** Upserts a user, creates a session and returns its signed cookie. */
-async function signIn(email: string): Promise<string> {
-  const { rows } = await db.query<{ id: string }>(
-    `insert into users (name, email, email_verified) values ($1, $2, true)
-     on conflict (email) do update set name = excluded.name returning id`,
-    [email.split("@")[0], email],
-  );
-  const token = randomBytes(24).toString("base64url");
-  await db.query(`insert into sessions (user_id, token, expires_at) values ($1, $2, now() + interval '1 hour')`, [
-    rows[0]!.id,
-    token,
-  ]);
-  const signature = await makeSignature(token, process.env.BETTER_AUTH_SECRET!);
-  return `better-auth.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
-}
-
-const owner = await signIn("e2e-owner@unmix.test");
-const stranger = await signIn("e2e-stranger@unmix.test");
+const { cookie: owner } = await signInAs(db, "e2e-owner@unmix.test");
+const { cookie: stranger } = await signInAs(db, "e2e-stranger@unmix.test");
 const as = (cookie: string, init: RequestInit = {}): RequestInit => ({ ...init, headers: { ...init.headers, cookie } });
 
 async function call(path: string, init?: RequestInit) {
