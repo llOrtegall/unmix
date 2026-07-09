@@ -67,6 +67,8 @@ export const TrackSummary = z.object({
   title: z.string(),
   status: TrackStatus,
   durationSeconds: z.number().nullable(),
+  /** Attribution for licensed content such as the demo song; null for uploads. */
+  credit: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type TrackSummary = z.infer<typeof TrackSummary>;
