@@ -16,6 +16,7 @@ export const tracks = pgTable(
     status: text("status").notNull(),
     durationSeconds: doublePrecision("duration_seconds"),
     latestJobId: uuid("latest_job_id"),
+    credit: text("credit"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("tracks_user_created_at_idx").on(t.userId, t.createdAt)],

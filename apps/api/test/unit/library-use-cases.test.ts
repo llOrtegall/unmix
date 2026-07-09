@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { AddDemoTrack } from "../../src/modules/library/application/use-cases/add-demo-track.ts";
 import { CollectGarbage } from "../../src/modules/library/application/use-cases/collect-garbage.ts";
-import { Track } from "../../src/modules/library/domain/track.ts";
-import { clock, InMemoryStorage, InMemoryTracks } from "./fakes.ts";
+import { type DemoSong, Track } from "../../src/modules/library/domain/track.ts";
+import { clock, InMemoryStorage, InMemoryTracks, sequentialIds } from "./fakes.ts";
 
 const HOUR = 3_600_000;
 const ids = {
@@ -39,5 +40,37 @@ describe("CollectGarbage", () => {
       `tracks/${ids.done}/original.mp3`,
       "tracks/not-a-track/file",
     ].sort());
+  });
+});
+
+const demo: DemoSong = {
+  title: "La",
+  originalFilename: "la.mp3",
+  contentType: "audio/mpeg",
+  sizeBytes: 7_568_113,
+  inputKey: "demo/original.mp3",
+  durationSeconds: 189.1,
+  credit: "Music: La by Shane Ivers",
+  stems: [{ name: "vocals", key: "demo/stems/vocals.flac", sizeBytes: 1, silent: false, previewKey: "p", peaksKey: "w" }],
+};
+
+describe("AddDemoTrack", () => {
+  it("gives the user a completed copy that points at the shared demo files", async () => {
+    const tracks = new InMemoryTracks();
+    const add = new AddDemoTrack({ tracks, demo: { load: async () => demo }, ids: sequentialIds("t"), clock });
+
+    expect(await add.execute("u1")).toBe(true);
+    const t = (await tracks.findById("t-1"))!.toSnapshot();
+    expect(t).toMatchObject({ ownerId: "u1", status: "completed", credit: demo.credit, inputKey: "demo/original.mp3" });
+    expect(t.stems.map((s) => s.key)).toEqual(["demo/stems/vocals.flac"]);
+    // Deleting it only removes its own tracks/<id>/ folder, never demo/.
+    expect((await tracks.findById("t-1"))!.canDelete().isOk()).toBe(true);
+  });
+
+  it("does nothing until a demo is seeded", async () => {
+    const tracks = new InMemoryTracks();
+    const add = new AddDemoTrack({ tracks, demo: { load: async () => null }, ids: sequentialIds(), clock });
+    expect(await add.execute("u1")).toBe(false);
+    expect(tracks.rows.size).toBe(0);
   });
 });

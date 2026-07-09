@@ -10,6 +10,7 @@ export interface TrackSummaryView {
   title: string;
   status: TrackStatus;
   durationSeconds: number | null;
+  credit: string | null;
   createdAt: string;
 }
 
@@ -68,6 +69,7 @@ function summary(t: {
   title: string;
   status: TrackStatus;
   durationSeconds: number | null;
+  credit: string | null;
   createdAt: Date;
 }): TrackSummaryView {
   return {
@@ -75,6 +77,7 @@ function summary(t: {
     title: t.title,
     status: t.status,
     durationSeconds: t.durationSeconds,
+    credit: t.credit,
     createdAt: t.createdAt.toISOString(),
   };
 }

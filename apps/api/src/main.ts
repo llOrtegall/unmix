@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { buildApp } from "./app.ts";
+import { AddDemoTrack } from "./modules/library/application/use-cases/add-demo-track.ts";
 import { CollectGarbage } from "./modules/library/application/use-cases/collect-garbage.ts";
 import { DeleteTrack } from "./modules/library/application/use-cases/delete-track.ts";
 import { DownloadStems } from "./modules/library/application/use-cases/download-stems.ts";
@@ -12,6 +13,7 @@ import { RegisterUpload } from "./modules/library/application/use-cases/register
 import { createIdentity } from "./modules/identity/auth.ts";
 import { CheckTrackOwnership, GetSeparableTrack } from "./modules/library/index.ts";
 import { DrizzleTrackRepository } from "./modules/library/infrastructure/drizzle-track-repository.ts";
+import { S3DemoLibrary } from "./modules/library/infrastructure/s3-demo-library.ts";
 import { S3Storage } from "./modules/library/infrastructure/s3-storage.ts";
 import { GetJob } from "./modules/separation/application/use-cases/get-job.ts";
 import { JobLifecycle } from "./modules/separation/application/use-cases/job-lifecycle.ts";
@@ -53,11 +55,9 @@ const updates = new InMemoryJobUpdates();
 const ids = uuidGenerator;
 const clock = systemClock;
 
-// Identity module
-const identity = createIdentity(db, config.auth);
-
 // Library module
 const tracks = new DrizzleTrackRepository(tx);
+const addDemoTrack = new AddDemoTrack({ tracks, demo: new S3DemoLibrary(storage), ids, clock });
 const library = {
   registerUpload: new RegisterUpload({
     tracks,
@@ -75,6 +75,15 @@ const trackHandlers = new SeparationEventHandlers({ tracks });
 events.on<SeparationRequested>(SEPARATION_REQUESTED, trackHandlers.onRequested);
 events.on<SeparationCompleted>(SEPARATION_COMPLETED, trackHandlers.onCompleted);
 events.on<SeparationFailed>(SEPARATION_FAILED, trackHandlers.onFailed);
+
+// Identity module: new users start with the demo song. Hooks only run during
+// requests, so `app` is initialized by then.
+const identity = createIdentity(db, config.auth, {
+  onUserCreated: async (userId) => {
+    await addDemoTrack.execute(userId);
+  },
+  onHookError: (error) => app.log.error({ err: error }, "could not add the demo track"),
+});
 
 // Separation module
 const jobs = new DrizzleJobRepository(tx);

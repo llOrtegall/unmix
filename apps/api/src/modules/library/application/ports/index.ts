@@ -1,5 +1,5 @@
 import type { Readable } from "node:stream";
-import type { Track } from "../../domain/track.ts";
+import type { DemoSong, Track } from "../../domain/track.ts";
 
 export interface TrackPage {
   items: Track[];
@@ -16,6 +16,11 @@ export interface TrackRepository {
   findAbandonedUploads(before: Date): Promise<string[]>;
   /** The subset of `ids` that still have a row. */
   existingIds(ids: string[]): Promise<Set<string>>;
+}
+
+/** Where the shared, pre-separated demo song is described (null until it is seeded). */
+export interface DemoLibrary {
+  load(): Promise<DemoSong | null>;
 }
 
 export interface ObjectStorage {

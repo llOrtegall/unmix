@@ -18,6 +18,8 @@ export interface TrackProps {
   durationSeconds: number | null;
   latestJobId: string | null;
   stems: Stem[];
+  /** Attribution for licensed content (the demo song); null for uploads. */
+  credit: string | null;
   createdAt: Date;
 }
 
@@ -29,6 +31,18 @@ export interface RegisterTrack {
   sizeBytes: number;
   maxSizeBytes: number;
   now: Date;
+}
+
+/** A song already separated, shared by every user's demo track (files are never copied). */
+export interface DemoSong {
+  title: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  inputKey: string;
+  durationSeconds: number;
+  credit: string;
+  stems: Stem[];
 }
 
 export class Track extends AggregateRoot {
@@ -59,9 +73,30 @@ export class Track extends AggregateRoot {
         durationSeconds: null,
         latestJobId: null,
         stems: [],
+        credit: null,
         createdAt: input.now,
       }),
     );
+  }
+
+  /** A ready-to-play copy of the demo song for one user. */
+  static fromDemo(input: { id: string; ownerId: string; demo: DemoSong; now: Date }): Track {
+    const { demo } = input;
+    return new Track({
+      id: input.id,
+      ownerId: input.ownerId,
+      title: demo.title,
+      originalFilename: demo.originalFilename,
+      mediaType: MediaType.restore(demo.contentType),
+      sizeBytes: demo.sizeBytes,
+      inputKey: demo.inputKey,
+      status: "completed",
+      durationSeconds: demo.durationSeconds,
+      latestJobId: null,
+      stems: [...demo.stems],
+      credit: demo.credit,
+      createdAt: input.now,
+    });
   }
 
   static restore(props: TrackProps): Track {

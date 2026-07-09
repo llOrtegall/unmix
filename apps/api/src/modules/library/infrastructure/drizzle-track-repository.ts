@@ -37,6 +37,7 @@ export class DrizzleTrackRepository implements TrackRepository {
       status: t.status,
       durationSeconds: t.durationSeconds,
       latestJobId: t.latestJobId,
+      credit: t.credit,
       createdAt: t.createdAt,
     };
     await this.#tx.run(async () => {
@@ -119,6 +120,7 @@ function toDomain(row: TrackRow, stemRows: StemRow[]): Track {
         peaksKey: s.peaksKey,
       }),
     ),
+    credit: row.credit,
     createdAt: row.createdAt,
   });
 }

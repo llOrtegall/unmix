@@ -11,7 +11,13 @@ export interface AuthConfig {
   google: { clientId: string; clientSecret: string };
 }
 
-export function createIdentity(db: Database, config: AuthConfig): Identity {
+export interface IdentityHooks {
+  /** Runs after sign-up; a failure is reported but never blocks the sign-in. */
+  onUserCreated(userId: string): Promise<void>;
+  onHookError(error: unknown): void;
+}
+
+export function createIdentity(db: Database, config: AuthConfig, hooks: IdentityHooks): Identity {
   const auth = betterAuth({
     secret: config.secret,
     baseURL: config.baseUrl,
@@ -25,6 +31,15 @@ export function createIdentity(db: Database, config: AuthConfig): Identity {
     advanced: { database: { generateId: "uuid" } },
     socialProviders: {
       google: { clientId: config.google.clientId, clientSecret: config.google.clientSecret, prompt: "select_account" },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            await hooks.onUserCreated(user.id).catch(hooks.onHookError);
+          },
+        },
+      },
     },
     telemetry: { enabled: false },
   });
