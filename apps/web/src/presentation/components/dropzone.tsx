@@ -76,8 +76,11 @@ export function Dropzone() {
           <UploadCloud className="size-7" />
         </div>
         <div>
-          <p className="text-lg font-semibold">{t("upload.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("upload.subtitle")}</p>
+          {/* Touch screens cannot drag files: offer the picker instead. */}
+          <p className="text-lg font-semibold pointer-coarse:hidden">{t("upload.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground pointer-coarse:hidden">{t("upload.subtitle")}</p>
+          <p className="hidden text-lg font-semibold pointer-coarse:block">{t("upload.titleTouch")}</p>
+          <p className="mt-1 hidden text-sm text-muted-foreground pointer-coarse:block">{t("upload.subtitleTouch")}</p>
         </div>
         <p className="text-xs text-muted-foreground/80">{t("upload.formats", { mb: MAX_UPLOAD_MB })}</p>
       </button>
