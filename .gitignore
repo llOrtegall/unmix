@@ -26,3 +26,7 @@ data/
 
 # Spike outputs
 services/worker/spike/output/
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
