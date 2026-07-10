@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "wouter";
 import type { AppError } from "@/application/ports/index.ts";
@@ -11,6 +11,7 @@ import { Card } from "@/presentation/components/ui/card.tsx";
 import { errorMessage, useT } from "@/presentation/i18n/use-t.ts";
 import { formatDuration } from "@/presentation/lib/utils.ts";
 import { Credit, DemoBadge } from "@/presentation/components/demo-credit.tsx";
+import { useDocumentTitle } from "@/presentation/lib/use-document-title.ts";
 import { useServices } from "@/presentation/services.tsx";
 
 export function TrackPage({ id }: { id: string }) {
@@ -32,6 +33,7 @@ export function TrackPage({ id }: { id: string }) {
   }, [reload]);
 
   const track = data?.track;
+  useDocumentTitle(track?.title);
   return (
     <div className="space-y-6 pt-2">
       <div className="flex flex-wrap items-center gap-3">
@@ -44,7 +46,26 @@ export function TrackPage({ id }: { id: string }) {
       </div>
 
       {error ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">{errorMessage(t, error.code)}</Card>
+        <Card className="flex flex-col items-center gap-4 p-8 text-center text-sm text-muted-foreground">
+          {errorMessage(t, error.code)}
+          {error.code === "TRACK_NOT_FOUND" ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/">{t("app.library")}</Link>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setError(null);
+                void reload();
+              }}
+            >
+              <RotateCw />
+              {t("common.retry")}
+            </Button>
+          )}
+        </Card>
       ) : !track ? (
         <div className="space-y-3">
           <div className="h-8 w-64 animate-pulse rounded-lg bg-card" />

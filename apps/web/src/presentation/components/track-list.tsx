@@ -1,4 +1,4 @@
-import { ChevronRight, Music2, Trash2 } from "lucide-react";
+import { ChevronRight, Music2, RotateCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "wouter";
 import type { TrackSummary } from "@/domain/track.ts";
@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/presentation/components/ui/alert-dialog.tsx";
 import { Button } from "@/presentation/components/ui/button.tsx";
-import { useLocale, useT } from "@/presentation/i18n/use-t.ts";
+import { errorMessage, useLocale, useT } from "@/presentation/i18n/use-t.ts";
 import { formatDuration } from "@/presentation/lib/utils.ts";
 import { DemoBadge } from "@/presentation/components/demo-credit.tsx";
 import { useServices } from "@/presentation/services.tsx";
@@ -24,12 +24,17 @@ export function TrackList() {
   const { tracks } = useServices();
   const [items, setItems] = useState<TrackSummary[] | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const page = await tracks.listTracks();
     if (page.ok) {
       setItems(page.value.items);
       setCursor(page.value.nextCursor);
+      setLoadError(null);
+    } else {
+      setLoadError(page.error.code);
     }
   }, [tracks]);
 
@@ -51,12 +56,15 @@ export function TrackList() {
     if (page.ok) {
       setItems((prev) => [...(prev ?? []), ...page.value.items]);
       setCursor(page.value.nextCursor);
+    } else {
+      setNotice(errorMessage(t, page.error.code));
     }
   }
 
   async function remove(id: string) {
     const result = await tracks.deleteTrack(id);
     if (result.ok) setItems((prev) => prev?.filter((i) => i.id !== id) ?? null);
+    else setNotice(errorMessage(t, result.error.code));
   }
 
   return (
@@ -64,7 +72,20 @@ export function TrackList() {
       <h2 id="library-title" className="mb-4 text-sm font-medium tracking-wide text-muted-foreground uppercase">
         {t("library.title")}
       </h2>
-      {items === null ? (
+      {notice && (
+        <p role="alert" className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-red-200">
+          {notice}
+        </p>
+      )}
+      {items === null && loadError ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+          {errorMessage(t, loadError)}
+          <Button variant="outline" size="sm" onClick={() => void refresh()}>
+            <RotateCw />
+            {t("common.retry")}
+          </Button>
+        </div>
+      ) : items === null ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-card" />
