@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from unmix_worker.application.ports import (
@@ -6,6 +7,7 @@ from unmix_worker.application.ports import (
     ObjectStorage,
     PreviewEncoder,
     ProgressReporter,
+    SeparatedStem,
     StemSeparator,
 )
 from unmix_worker.domain.errors import FailureCode, SeparationFailure
@@ -75,29 +77,31 @@ class SeparateTrack:
         if not separated:
             return Err(SeparationFailure(FailureCode.SEPARATION_ERROR, "No stems produced."))
 
-        stems: list[Stem] = []
-        for i, item in enumerate(separated):
-            step(Stage.UPLOADING, i / len(separated))
-            preview = item.path.with_suffix(".preview.mp3")
-            self._previews.encode(item.path, preview)
+        # Encoding and uploads are I/O and subprocesses: one thread per stem.
+        step(Stage.UPLOADING, 0)
+        with ThreadPoolExecutor(max_workers=len(separated)) as pool:
+            futures = [pool.submit(self._publish, task, item) for item in separated]
+            for done, _ in enumerate(as_completed(futures), start=1):
+                step(Stage.UPLOADING, done / len(separated))
+            stems = tuple(f.result() for f in futures)
 
-            key = task.stem_key(item.name)
-            size = self._storage.upload(item.path, key, "audio/flac")
-            self._storage.upload(preview, task.preview_key(item.name), "audio/mpeg")
-            peaks = json.dumps({"version": 1, "peaks": item.peaks}, separators=(",", ":"))
-            self._storage.put_bytes(peaks.encode(), task.peaks_key(item.name), "application/json")
-            stems.append(
-                Stem(
-                    item.name,
-                    key,
-                    size,
-                    is_silent(item.relative_db),
-                    task.preview_key(item.name),
-                    task.peaks_key(item.name),
-                )
-            )
-        step(Stage.UPLOADING, 1)
+        return Ok(SeparationOutcome(task.job_id, task.track_id, audio.duration_seconds, stems))
 
-        return Ok(
-            SeparationOutcome(task.job_id, task.track_id, audio.duration_seconds, tuple(stems))
+    def _publish(self, task: SeparationTask, item: SeparatedStem) -> Stem:
+        """Encode the preview and upload the FLAC, the preview and the peaks of one stem."""
+        preview = item.path.with_suffix(".preview.mp3")
+        self._previews.encode(item.path, preview)
+
+        key = task.stem_key(item.name)
+        size = self._storage.upload(item.path, key, "audio/flac")
+        self._storage.upload(preview, task.preview_key(item.name), "audio/mpeg")
+        peaks = json.dumps({"version": 1, "peaks": item.peaks}, separators=(",", ":"))
+        self._storage.put_bytes(peaks.encode(), task.peaks_key(item.name), "application/json")
+        return Stem(
+            item.name,
+            key,
+            size,
+            is_silent(item.relative_db),
+            task.preview_key(item.name),
+            task.peaks_key(item.name),
         )

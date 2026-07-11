@@ -94,3 +94,27 @@ def test_propagates_invalid_media(tmp_path: Path) -> None:
     )
 
     assert result == Err(failure)
+
+
+def test_publishes_stems_concurrently_in_separator_order(tmp_path: Path) -> None:
+    import threading
+
+    seen: set[int] = set()
+
+    class ThreadRecordingPreviews(FakePreviews):
+        def encode(self, src: Path, dest: Path) -> None:
+            seen.add(threading.get_ident())
+            super().encode(src, dest)
+
+    use_case = SeparateTrack(
+        storage=FakeStorage({TASK.input_key}),
+        normalizer=FakeNormalizer(),
+        separator=FakeSeparator(),
+        previews=ThreadRecordingPreviews(),
+        max_duration_seconds=600,
+    )
+    result = use_case.execute(TASK, RecordingProgress(), tmp_path)
+
+    assert isinstance(result, Ok)
+    assert [s.name for s in result.value.stems] == list(StemName)
+    assert threading.get_ident() not in seen
