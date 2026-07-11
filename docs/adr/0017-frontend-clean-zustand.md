@@ -1,18 +1,18 @@
 # 0017 — Frontend: Clean Architecture + Zustand
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-27
+- **Status:** Accepted
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-El frontend tiene lógica propia (mixer, sincronización de stems, estados de subida y progreso) y depende de librerías que pueden cambiar (wavesurfer, transporte HTTP/SSE). Complementa [ADR 0005](0005-frontend-react-vite.md).
+The frontend has its own logic (mixer, stem synchronization, upload and progress states) and depends on libraries that may change (wavesurfer, HTTP/SSE transport). Complements [ADR 0005](0005-frontend-react-vite.md).
 
-## Decisión
+## Decision
 
-Clean Architecture completa en `apps/web`: `domain` (modelos, reglas del mixer), `application` (use cases + ports: `TrackGateway`, `JobEventsGateway`, `AudioEngine`, `UploadGateway`), `infrastructure` (fetch, EventSource, wavesurfer/Web Audio, S3 presigned) y `presentation` (React). Estado de cliente con Zustand (librería mínima, ~1 KB). TanStack Query es opcional para caché de datos del servidor y solo vive en `presentation`.
+Full Clean Architecture in `apps/web`: `domain` (models, mixer rules), `application` (use cases + ports: `TrackGateway`, `JobEventsGateway`, `AudioEngine`, `UploadGateway`), `infrastructure` (fetch, EventSource, wavesurfer/Web Audio, S3 presigned) and `presentation` (React). Client state with Zustand (a minimal library, ~1 KB). TanStack Query is optional for caching server data and lives only in `presentation`.
 
-## Consecuencias
+## Consequences
 
-- React y Zustand quedan en el borde; el dominio es TypeScript puro y testeable sin DOM.
-- Reemplaza la mención a TanStack Query como pieza obligatoria de ADR 0005.
-- Más boilerplate que una estructura por features.
+- React and Zustand stay at the edge; the domain is plain TypeScript, testable without a DOM.
+- Replaces ADR 0005's mention of TanStack Query as a required piece.
+- More boilerplate than a feature-based layout.

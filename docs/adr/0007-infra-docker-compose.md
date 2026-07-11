@@ -1,18 +1,18 @@
 # 0007 — Infra: Docker Compose
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-27
+- **Status:** Accepted
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-El sistema tiene seis servicios. Necesitamos un entorno reproducible para desarrollo y para demos al cliente.
+The system has six services. We need a reproducible environment for development and for client demos.
 
-## Decisión
+## Decision
 
-Docker Compose orquesta postgres, redis, minio, api, worker y web.
+Docker Compose orchestrates postgres, redis, minio, api, worker and web.
 
-## Consecuencias
+## Consequences
 
-- Un comando levanta todo.
-- Requiere instalar Docker en WSL (fase 0).
-- La imagen del worker es pesada (PyTorch); usar caché de capas y precargar el modelo en build.
+- One command brings everything up.
+- Requires installing Docker in WSL (phase 0).
+- The worker image is heavy (PyTorch); use layer caching and preload the model at build time.

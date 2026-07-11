@@ -1,18 +1,18 @@
-# 0013 — Errores de negocio con Result type
+# 0013 — Business errors with a Result type
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-27
+- **Status:** Accepted
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-Los errores de negocio (archivo demasiado largo, transición de estado inválida) son esperados y deben ser visibles en las firmas, no escondidos en excepciones.
+Business errors (file too long, invalid state transition) are expected and should be visible in signatures, not hidden in exceptions.
 
-## Decisión
+## Decision
 
-Dominio y application devuelven `Result<T, E>`: `neverthrow` en TypeScript y un `Result` propio mínimo en Python. Los errores de negocio son tipos discriminados. Las excepciones quedan para fallos inesperados (red caída, bug). La capa `interface` traduce cada error a HTTP o a un evento `failed`.
+Domain and application return `Result<T, E>`: `neverthrow` in TypeScript and a minimal in-house `Result` in Python. Business errors are discriminated types. Exceptions are reserved for unexpected failures (network down, bugs). The `interface` layer turns each error into HTTP or a `failed` event.
 
-## Consecuencias
+## Consequences
 
-- El compilador obliga a manejar cada error de negocio.
-- Algo más verboso que lanzar excepciones.
-- Un único mapa error → código HTTP por módulo.
+- The compiler forces every business error to be handled.
+- Somewhat more verbose than throwing.
+- One error → HTTP status map per module.

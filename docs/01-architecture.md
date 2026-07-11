@@ -1,32 +1,32 @@
-# 01 — Arquitectura
+# 01 — Architecture
 
-## Vista general
+## Overview
 
 ```mermaid
 flowchart LR
-  U[Usuario] --> W[Web<br/>React + Vite]
+  U[User] --> W[Web<br/>React + Vite]
   W -- REST + SSE --> A[API<br/>Node + Fastify]
-  W -- PUT/GET presigned --> M[(Storage S3<br/>SeaweedFS)]
+  W -- presigned PUT/GET --> M[(S3 storage<br/>SeaweedFS)]
   A --> P[(Postgres)]
-  A -- encola job --> R[(Redis<br/>BullMQ)]
+  A -- enqueue job --> R[(Redis<br/>BullMQ)]
   R -- consume job --> K[Worker<br/>Python + Demucs]
-  K -- descarga original / sube stems --> M
-  K -- progreso / resultado --> R
-  R -- eventos --> A
+  K -- download original / upload stems --> M
+  K -- progress / result --> R
+  R -- events --> A
 ```
 
-## Componentes
+## Components
 
-| Componente | Responsabilidad |
-|------------|-----------------|
-| **Web** | Subida, progreso, mixer, biblioteca, descargas. No toca la cola ni la DB. |
-| **API** | Validación, URLs firmadas, creación de jobs, estado, SSE, historial, auth. Única fuente de verdad en Postgres. |
-| **Redis + BullMQ** | Cola `separation`. Reintentos, backoff, progreso, eventos. |
-| **Worker** | Descarga el original, normaliza con ffmpeg, ejecuta Demucs, sube stems, reporta progreso. Sin estado. |
-| **Postgres** | Tracks, jobs, stems y (fase 5) usuarios. |
-| **Storage S3** | Archivos originales y stems. SeaweedFS en local, compatible con S3: migrar a AWS S3 o Cloudflare R2 solo cambia variables de entorno. |
+| Component | Responsibility |
+|-----------|----------------|
+| **Web** | Upload, progress, mixer, library, downloads. Never touches the queue or the DB. |
+| **API** | Validation, presigned URLs, job creation, status, SSE, history, auth. The single source of truth, in Postgres. |
+| **Redis + BullMQ** | `separation` queue. Retries, backoff, progress, events. |
+| **Worker** | Downloads the original, normalizes it with ffmpeg, runs Demucs, uploads the stems, reports progress. Stateless. |
+| **Postgres** | Tracks, jobs, stems and users (phase 5). |
+| **S3 storage** | Original files and stems. SeaweedFS locally, S3-compatible: moving to AWS S3 or Cloudflare R2 only changes environment variables. |
 
-## Flujo de un trabajo
+## Flow of a job
 
 ```mermaid
 sequenceDiagram
@@ -36,39 +36,39 @@ sequenceDiagram
   participant R as Redis/BullMQ
   participant K as Worker
 
-  W->>A: POST /uploads (nombre, tamaño, tipo)
+  W->>A: POST /uploads (name, size, type)
   A-->>W: uploadUrl (presigned PUT) + trackId
-  W->>M: PUT archivo
+  W->>M: PUT file
   W->>A: POST /tracks/:id/jobs
   A->>R: add job {trackId, objectKey}
   A-->>W: jobId
   W->>A: GET /jobs/:id/events (SSE)
   R->>K: job
   K->>M: GET original
-  K->>K: ffmpeg → WAV 44.1 kHz
+  K->>K: ffmpeg → 44.1 kHz WAV
   K->>K: Demucs htdemucs_6s
   K->>R: updateProgress(%)
-  R-->>A: evento progress
+  R-->>A: progress event
   A-->>W: SSE progress
   K->>M: PUT 6 stems
   K->>R: completed {stems[]}
-  R-->>A: evento completed
-  A->>A: guarda stems en Postgres
+  R-->>A: completed event
+  A->>A: store stems in Postgres
   A-->>W: SSE completed
   W->>A: GET /tracks/:id
-  A-->>W: stems + URLs firmadas GET
+  A-->>W: stems + presigned GET URLs
 ```
 
-## Principios
+## Principles
 
-- **Worker intercambiable.** El worker solo conoce la cola y S3. Cambiar a GPU o a un proveedor cloud no afecta API ni Web.
-- **Archivos fuera de la API.** Web sube y descarga directo al storage S3 con URLs firmadas. La API nunca transmite audio.
-- **Contratos compartidos.** Los schemas zod en `packages/contracts` definen payloads de API y jobs. El worker valida el mismo contrato con modelos pydantic generados.
-- **Fallos esperados.** Reintentos con backoff, jobs idempotentes (misma clave de salida), timeouts por duración.
-- **Configuración por entorno.** Nada hardcodeado; todo en `.env`.
+- **Swappable worker.** The worker only knows the queue and S3. Moving to a GPU or a cloud provider does not affect the API or the web.
+- **Files never pass through the API.** The web uploads to and downloads from S3 storage directly with presigned URLs. The API never streams audio (the ZIP download is the one exception).
+- **Shared contracts.** The zod schemas in `packages/contracts` define API and job payloads. The worker validates the same contract with generated pydantic models.
+- **Failures are expected.** Retries with backoff, idempotent jobs (same output key), timeouts based on duration.
+- **Configuration by environment.** Nothing hardcoded; everything lives in `.env`.
 
-Modelo de dominio en [06-domain.md](06-domain.md). Capas y reglas de dependencia en [07-code-structure.md](07-code-structure.md).
+Domain model in [06-domain.md](06-domain.md). Layers and dependency rules in [07-code-structure.md](07-code-structure.md).
 
-## Rendimiento esperado (CPU)
+## Expected performance (CPU)
 
-Demucs en CPU tarda aproximadamente entre 1x y 3x la duración de la canción, según el procesador. Una canción de 4 minutos puede tardar entre 4 y 12 minutos. Por eso el progreso en vivo y la cola son obligatorios, no opcionales. Medir en fase 1.
+Demucs on CPU takes roughly 1x to 3x the song's length, depending on the processor. A 4-minute song can take 4 to 12 minutes. That is why live progress and the queue are mandatory, not optional. Measured in phase 1: see the [spike results](spike-demucs.md).

@@ -1,18 +1,18 @@
-# 0006 — Persistencia: Postgres + MinIO
+# 0006 — Persistence: Postgres + MinIO
 
-- **Estado:** Aceptada. Motor de storage reemplazado por [0019](0019-storage-seaweedfs.md)
-- **Fecha:** 2026-10-27
+- **Status:** Accepted. Storage engine superseded by [0019](0019-storage-seaweedfs.md)
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-Hay que guardar metadatos (tracks, jobs, stems) y archivos de audio grandes (un stem WAV de 4 minutos ocupa ~40 MB).
+We need to store metadata (tracks, jobs, stems) and large audio files (a 4-minute WAV stem takes ~40 MB).
 
-## Decisión
+## Decision
 
-PostgreSQL para metadatos. MinIO (compatible con S3) para archivos. El navegador sube y descarga con URLs firmadas.
+PostgreSQL for metadata. MinIO (S3-compatible) for files. The browser uploads and downloads with presigned URLs.
 
-## Consecuencias
+## Consequences
 
-- Migrar a AWS S3 o Cloudflare R2 solo cambia variables de entorno.
-- La API nunca transmite audio, salvo el ZIP en streaming.
-- Necesitamos política de limpieza de archivos antiguos (fase 6).
+- Moving to AWS S3 or Cloudflare R2 only changes environment variables.
+- The API never streams audio, except for the streaming ZIP.
+- We need a cleanup policy for old files (phase 6).

@@ -1,18 +1,18 @@
 # 0014 — Transactional outbox
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-27
+- **Status:** Accepted
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-Crear un job implica dos escrituras: Postgres (estado) y Redis (cola). Si el proceso cae entre ambas, quedan jobs perdidos o fantasmas.
+Creating a job means two writes: Postgres (state) and Redis (queue). If the process dies between them, jobs get lost or become ghosts.
 
-## Decisión
+## Decision
 
-Los use cases guardan el agregado y sus eventos de dominio en la tabla `outbox`, dentro de la misma transacción. Un relay en la API lee la outbox y publica en BullMQ, marcando cada fila como publicada. Los consumidores son idempotentes (clave = id del evento).
+Use cases store the aggregate and its domain events in the `outbox` table, in the same transaction. A relay inside the API reads the outbox and publishes to BullMQ, marking each row as published. Consumers are idempotent (key = event id).
 
-## Consecuencias
+## Consequences
 
-- Garantía at-least-once sin dual-write.
-- Una tabla y un proceso relay más.
-- Los eventos de vuelta del worker (progreso, completado) llegan por BullMQ y se procesan de forma idempotente en la API.
+- At-least-once delivery without dual writes.
+- One more table and one more relay process.
+- Events coming back from the worker (progress, completion) arrive through BullMQ and are processed idempotently by the API.

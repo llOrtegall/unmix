@@ -2,7 +2,7 @@
 
 Node.js 24 + TypeScript 7 API: Fastify, Drizzle (Postgres), BullMQ (Redis), S3 presigned URLs. Modular monolith with Clean Architecture ([docs/07](../../docs/07-code-structure.md)); layer and module rules are enforced by dependency-cruiser.
 
-Node runs the `.ts` sources directly (type stripping), so there is no build step. `tsc` only typechecks ([ADR 0022](../../docs/adr/0022-typescript-sin-build.md)).
+Node runs the `.ts` sources directly (type stripping), so there is no build step. `tsc` only typechecks ([ADR 0022](../../docs/adr/0022-typescript-without-build.md)).
 
 ```
 src/
@@ -32,11 +32,11 @@ Docker: `docker compose up -d api` (port 3000).
 
 ## Auth
 
-Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sesiones-y-propiedad.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session. A track that belongs to someone else answers 404, and so do its jobs.
+Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sessions-and-ownership.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session. A track that belongs to someone else answers 404, and so do its jobs.
 
 ## Demo song and cleanup
 
-New users get a ready-to-play copy of the demo song: a `Track` row that points at the shared files under `demo/` ([ADR 0026](../../docs/adr/0026-cancion-demo-y-limpieza.md)). Every hour, `CollectGarbage` removes uploads abandoned for more than 24 h and storage folders with no track row.
+New users get a ready-to-play copy of the demo song: a `Track` row that points at the shared files under `demo/` ([ADR 0026](../../docs/adr/0026-demo-song-and-cleanup.md)). Every hour, `CollectGarbage` removes uploads abandoned for more than 24 h and storage folders with no track row.
 
 ## How a separation flows
 

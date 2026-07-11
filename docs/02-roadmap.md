@@ -1,95 +1,102 @@
 # 02 — Roadmap
 
-Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de aceptación.
+Each phase ends with something demonstrable. Do not move on until its acceptance criteria are met.
 
-## Fase 0 — Setup del entorno
+## Phase 0 — Environment setup
 
-- Instalar Docker (Docker Desktop con integración WSL o Docker Engine en WSL). ✅
-- Instalar ffmpeg, pnpm y uv. ✅
-- `docker compose up -d postgres redis s3 s3-init` levanta todo sano.
+- Install Docker (Docker Desktop with WSL integration, or Docker Engine inside WSL). ✅
+- Install ffmpeg, pnpm and uv. ✅
+- `docker compose up -d postgres redis s3 s3-init` brings everything up healthy.
 
-**Aceptación:** los tres servicios en estado `healthy`; bucket `unmix` creado; subida y descarga con URL firmada funcionan.
+**Acceptance:** all three services `healthy`; `unmix` bucket created; upload and download with a presigned URL work.
 
-## Fase 1 — Spike de Demucs
+## Phase 1 — Demucs spike
 
-- Script CLI en `services/worker/spike/` que separa una canción local en 6 stems.
-- Medir tiempo total, RAM máxima y calidad percibida por stem.
-- Documentar resultados en `docs/spike-demucs.md`. ✅ 84 s para 4:57 (factor 0.28), 2.2 GB RAM.
+- CLI script in `services/worker/spike/` that splits a local song into 6 stems.
+- Measure total time, peak RAM and perceived quality per stem.
+- Document the results in `docs/spike-demucs.md`. ✅ 84 s for 4:57 (factor 0.28), 2.2 GB RAM.
 
-**Aceptación:** canción de 4 minutos separada en menos de ~15 minutos en CPU. Si no se cumple, evaluar modelo `htdemucs` (4 stems) o `segment` más pequeño.
+**Acceptance:** a 4-minute song separated in under ~15 minutes on CPU. Otherwise, evaluate the `htdemucs` model (4 stems) or a smaller `segment`.
 
-## Fase 2 — Worker
+## Phase 2 — Worker
 
-- `packages/contracts`: mensajes `separation.*.v1` en zod y generación de pydantic ([ADR 0016](adr/0016-contratos-zod-json-schema-pydantic.md)).
-- Estructura hexagonal con `import-linter` ([07](07-code-structure.md)).
-- Consume la cola `separation` con el paquete Python `bullmq`.
-- Descarga el original desde el storage S3, valida duración, normaliza con ffmpeg.
-- Ejecuta Demucs y reporta progreso.
-- Sube los stems a `tracks/{trackId}/stems/{stem}.flac` ([ADR 0020](adr/0020-stems-flac-y-silencio.md)).
-- Reintentos (3, backoff exponencial), timeout y errores tipados.
+- `packages/contracts`: `separation.*.v1` messages in zod, with generated pydantic ([ADR 0016](adr/0016-contracts-zod-json-schema-pydantic.md)).
+- Hexagonal structure checked by `import-linter` ([07](07-code-structure.md)).
+- Consumes the `separation` queue with the Python `bullmq` package.
+- Downloads the original from S3 storage, validates its duration, normalizes it with ffmpeg.
+- Runs Demucs and reports progress.
+- Uploads the stems to `tracks/{trackId}/stems/{stem}.flac` ([ADR 0020](adr/0020-flac-stems-and-silence.md)).
+- Retries (3, exponential backoff), timeout and typed errors.
 - Dockerfile.
 
-**Aceptación:** encolando un job a mano (script), los stems aparecen en el storage S3 y el job queda `completed`. Matar el worker a mitad de un job y reiniciarlo: el job se reintenta.
+**Acceptance:** after enqueuing a job by hand (script), the stems show up in S3 storage and the job ends `completed`. Killing the worker mid-job and restarting it retries the job.
 
-**Estado:** ✅ completada (2026-10-27). Job de punta a punta en Docker: 83 s para 4:57. Archivo inválido: `INVALID_MEDIA` sin reintentos. `kill -9` a mitad del job: BullMQ lo recupera unos 60 s después y lo completa.
+**Status:** ✅ done (2026-10-27). End-to-end job in Docker: 83 s for 4:57. Invalid file: `INVALID_MEDIA` with no retries. `kill -9` mid-job: BullMQ recovers it about 60 s later and completes it.
 
-## Fase 3 — API
+## Phase 3 — API
 
-- Fastify + TypeScript + Drizzle (migraciones) + zod.
-- Monolito modular (`separation`, `library`), Result type, outbox relay y `dependency-cruiser` ([ADRs 0012–0015, 0018](adr/)).
-- Endpoints de [03-api-contract.md](03-api-contract.md).
-- SSE escuchando `QueueEvents` de BullMQ.
-- Generación de ZIP en streaming.
-- Logs estructurados (pino). Tests de integración (vitest).
+- Fastify + TypeScript + Drizzle (migrations) + zod.
+- Modular monolith (`separation`, `library`), Result type, outbox relay and `dependency-cruiser` ([ADRs 0012–0015, 0018](adr/)).
+- Endpoints from [03-api-contract.md](03-api-contract.md).
+- SSE fed by BullMQ `QueueEvents`.
+- Streaming ZIP generation.
+- Structured logs (pino). Integration tests (vitest).
 
-**Aceptación:** flujo completo con `curl`: subir, crear job, ver eventos SSE, listar stems, descargar ZIP.
+**Acceptance:** full flow with `curl`: upload, create a job, watch SSE events, list stems, download the ZIP.
 
-**Estado:** ✅ completada (2026-10-27). `pnpm e2e` recorre el flujo en la pila Docker completa (84 s, ZIP de 93 MB). Reconciliación verificada con la API detenida durante un job. Tests de integración con testcontainers quedan pendientes; hoy cubren el e2e y los unit tests.
+**Status:** ✅ done (2026-10-27). `pnpm e2e` walks the flow on the full Docker stack (84 s, 93 MB ZIP). Reconciliation verified with the API stopped during a job. Integration tests with testcontainers are still pending; today the e2e and unit tests cover it.
 
-## Fase 4 — Frontend
+## Phase 4 — Frontend
 
-- Clean Architecture + Zustand ([ADR 0017](adr/0017-frontend-clean-zustand.md)); dominio del mixer con tests unitarios.
-- Drag and drop con validación previa (tipo, tamaño).
-- Barra de subida y barra de procesamiento en vivo.
-- Mixer: waveform por stem, mute, solo, volumen, play/pause/seek sincronizado.
-- Biblioteca de canciones.
-- Descarga por stem y ZIP.
+- Clean Architecture + Zustand ([ADR 0017](adr/0017-frontend-clean-zustand.md)); mixer domain with unit tests.
+- Drag and drop with upfront validation (type, size).
+- Upload bar and live processing bar.
+- Mixer: waveform per stem, mute, solo, volume, synchronized play/pause/seek.
+- Song library.
+- Per-stem and ZIP download.
 
-**Aceptación:** un usuario no técnico completa el flujo sin ayuda.
+**Acceptance:** a non-technical user completes the flow without help.
 
-**Estado:** ✅ implementada (2026-10-27). Verificada con Playwright: archivo inválido rechazado, subida, progreso en vivo, mixer en 102 s, cambio de idioma, vista móvil, sin errores de consola. Pendiente: prueba con un usuario real.
+**Status:** ✅ done (2026-10-27). Verified with Playwright: invalid file rejected, upload, live progress, mixer in 102 s, language switch, mobile view, no console errors.
 
-## Fase 5 — Autenticación
+## Phase 5 — Authentication
 
-- Better Auth con Google OAuth.
-- Tracks asociados a usuario; historial privado.
+- Better Auth with Google OAuth.
+- Tracks belong to a user; private history.
 
-**Aceptación:** dos cuentas de Google ven bibliotecas distintas.
+**Acceptance:** two Google accounts see different libraries.
 
-**Estado:** ✅ implementada (2026-10-27), [ADR 0025](adr/0025-sesiones-y-propiedad.md). E2E de la API con dos usuarios de prueba: 401 sin sesión, y el segundo usuario recibe 404 en lista, detalle, job, SSE, ZIP y borrado. UI verificada con Playwright (login, biblioteca, cerrar sesión). Aceptación verificada con dos cuentas reales de Google: cada una ve solo su biblioteca.
+**Status:** ✅ done (2026-10-27), [ADR 0025](adr/0025-sessions-and-ownership.md). API e2e with two test users: 401 without a session, and the second user gets 404 on list, detail, job, SSE, ZIP and delete. UI verified with Playwright (sign-in, library, sign-out). Acceptance verified with two real Google accounts: each one sees only its own library.
 
-## Fase 6 — Pulido para cliente
+## Phase 6 — Client polish
 
-- Mensajes de error amigables, estados vacíos, skeletons.
-- Diseño responsive.
-- Canción demo precargada.
-- Tests e2e con Playwright.
-- Limpieza automática de archivos antiguos.
+- Friendly error messages, empty states, skeletons.
+- Responsive design.
+- Preloaded demo song.
+- Playwright e2e tests.
+- Automatic cleanup of old files.
 
-**Aceptación:** demo grabada de punta a punta lista para el cliente.
+**Acceptance:** an end-to-end recorded demo, ready for the client.
 
-**Estado:** ✅ implementada (2026-10-27), [ADR 0026](adr/0026-cancion-demo-y-limpieza.md).
-- Demo "La" (CC BY 4.0) separada una vez y entregada a cada usuario, con crédito visible.
-- Limpieza horaria de subidas abandonadas (>24 h) y archivos huérfanos.
-- Estados de error con "Reintentar", mensajes para todos los códigos, texto del dropzone para pantallas táctiles y título de página.
-- Suite Playwright: 16 tests en escritorio y móvil (~10 s) más uno `@slow` con Demucs real (~1.2 min).
-- Demo grabada con `demo:record` (50 s, sin audio).
+**Status:** ✅ done (2026-10-27), [ADR 0026](adr/0026-demo-song-and-cleanup.md). Manually tested by the team.
+- Demo song "La" (CC BY 4.0) separated once and given to every user, with visible credit.
+- Hourly cleanup of abandoned uploads (>24 h) and orphan files.
+- Error states with "Try again", messages for every error code, touch-screen wording in the dropzone, page titles.
+- Playwright suite: 16 tests on desktop and mobile (~10 s) plus one `@slow` test with real Demucs (~1.2 min).
+- Recorded demo with `demo:record` (50 s, silent).
 
-Pendiente: prueba con un usuario real.
+## Open items
 
-## Futuro
+- Test with a real (non-technical) user.
+- Integration tests with testcontainers.
+- Worker `maxStalledCount`: a second crash fails the job.
+- Worker image is 3.45 GB.
+- MP3 previews add ~16 s per song (could be encoded in parallel).
+- The browser e2e suite does not run in CI (it needs the full stack).
 
-- Worker con GPU (local CUDA o Modal / RunPod / Replicate).
-- Modelos RoFormer para voz de mayor calidad.
-- Transcripción a MIDI (Basic Pitch).
-- Cuotas y planes.
+## Future
+
+- GPU worker (local CUDA, or Modal / RunPod / Replicate).
+- RoFormer models for higher-quality vocals.
+- Transcription to MIDI (Basic Pitch).
+- Quotas and plans.

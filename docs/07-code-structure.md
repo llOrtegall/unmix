@@ -1,6 +1,6 @@
-# 07 — Estructura de código y reglas de dependencia
+# 07 — Code structure and dependency rules
 
-Regla única para los tres servicios: **las dependencias apuntan hacia el dominio.**
+One rule for all three services: **dependencies point toward the domain.**
 
 ```
 interface / presentation  ─┐
@@ -8,41 +8,43 @@ interface / presentation  ─┐
 infrastructure  ───────────┘
 ```
 
-| Capa | Contiene | Puede importar |
-|------|----------|----------------|
-| `domain` | Entidades, value objects, eventos, errores de negocio | Nada externo (solo `shared/kernel`) |
-| `application` | Use cases, ports (interfaces), DTOs internos | `domain` |
-| `infrastructure` | Adapters que implementan ports | `application`, `domain`, librerías |
-| `interface` / `presentation` | HTTP, SSE, consumidores de cola, UI | `application`, `contracts` |
+| Layer | Contains | May import |
+|-------|----------|------------|
+| `domain` | Entities, value objects, events, business errors | Nothing external (only `shared/kernel`) |
+| `application` | Use cases, ports (interfaces), internal DTOs | `domain` |
+| `infrastructure` | Adapters that implement ports | `application`, `domain`, libraries |
+| `interface` / `presentation` | HTTP, SSE, queue consumers, UI | `application`, `contracts` |
 
-El composition root de cada proceso es el único lugar que conoce todas las capas ([ADR 0015](adr/0015-composition-root-manual.md)).
+Each process's composition root is the only place that knows every layer ([ADR 0015](adr/0015-manual-composition-root.md)).
 
-## API (`apps/api`) — monolito modular
+## API (`apps/api`) — modular monolith
 
 ```
 src/
-  main.ts                      composition root + arranque Fastify
+  main.ts                      composition root + Fastify startup + background jobs
+  app.ts                       Fastify app (routes, auth guard, errors, /health)
   shared/
-    kernel/                    Result, DomainEvent, Entity, Clock, IdGenerator
-    infrastructure/            db (Drizzle), outbox relay, logger, s3 client
+    kernel/                    Result, DomainEvent, AggregateRoot, Clock, IdGenerator
+    infrastructure/            config, db (Drizzle), outbox relay
+    interface/                 zod parsing, error → HTTP mapping
   modules/
     separation/
-      domain/                  SeparationJob, Progress, eventos, errores
+      domain/                  SeparationJob, events, errors
       application/
-        use-cases/             RequestSeparation, RecordProgress, CompleteSeparation
-        ports/                 JobRepository, SeparationQueue
-      infrastructure/          DrizzleJobRepository, BullMqSeparationQueue
-      interface/               rutas, SSE, consumidor de eventos del worker
-      index.ts                 API pública del módulo
-      wiring.ts
+        use-cases/             RequestSeparation, JobLifecycle, GetJob, ReconcileJobs
+        ports/                 JobRepository, TrackCatalog, QueueInspector, JobUpdates
+      infrastructure/          DrizzleJobRepository, BullMQ adapters, LibraryTrackCatalog
+      interface/               routes, SSE
+      index.ts                 the module's public API
     library/
-      domain/                  Track, Stem, StemName, Duration
-      application/             RegisterUpload, AttachStems, ListTracks, DeleteTrack
-      infrastructure/          DrizzleTrackRepository
-      interface/               rutas
+      domain/                  Track, Stem, MediaType
+      application/             RegisterUpload, GetTrack, ListTracks, DeleteTrack, DownloadStems,
+                               AddDemoTrack, CollectGarbage
+      infrastructure/          DrizzleTrackRepository, S3Storage, S3DemoLibrary
+      interface/               routes
       index.ts
-      wiring.ts
-    identity/                  Better Auth (sin capas DDD)
+    identity/                  Better Auth (no DDD layers)
+scripts/                       demo seed, test users
 ```
 
 ## Worker (`services/worker`) — hexagonal
@@ -50,7 +52,7 @@ src/
 ```
 src/unmix_worker/
   main.py                      composition root
-  domain/                      SeparationTask, Stem, errores
+  domain/                      SeparationTask, Stem, errors
   application/
     separate_track.py          use case
     ports.py                   StemSeparator, MediaNormalizer, ObjectStorage, ProgressReporter
@@ -58,37 +60,42 @@ src/unmix_worker/
     demucs_separator.py
     ffmpeg_normalizer.py
     s3_storage.py
-    bullmq_consumer.py         interface: traduce mensaje → use case
+    bullmq_consumer.py         interface: turns a message into a use case call
     bullmq_progress.py
-  contracts/                   modelos pydantic generados (no editar)
+  contracts/                   generated pydantic models (do not edit)
 tests/
-  unit/                        dominio + use case con fakes
-  integration/                 adapters reales (testcontainers)
+  unit/                        domain + use case with fakes
+  integration/                 real adapters (testcontainers)
 ```
 
 ## Web (`apps/web`) — Clean Architecture
 
 ```
 src/
-  main.tsx                     arranque React
+  main.tsx                     React startup
   container.ts                 composition root
   domain/
-    track.ts, stem.ts          modelos
-    mix.ts                     reglas del mixer (solo, mute, ganancia efectiva)
+    track.ts, stem.ts, user.ts models
+    mix.ts                     mixer rules (solo, mute, effective gain)
   application/
-    use-cases/                 UploadTrack, WatchSeparation, LoadTrack, DownloadStems
-    ports/                     TrackGateway, UploadGateway, JobEventsGateway, AudioEngine
+    use-cases/                 UploadTrack, LoadTrack, WatchJob, RetrySeparation
+    ports/                     SessionGateway, TrackGateway, UploadGateway, JobEventsGateway, AudioEngine
   infrastructure/
-    http/                      FetchTrackGateway
+    auth/                      BetterAuthSessionGateway
+    http/                      HttpTrackGateway, FetchPeaksGateway
     sse/                       EventSourceJobEvents
-    upload/                    PresignedUploadGateway
-    audio/                     WebAudioEngine (wavesurfer para waveforms)
+    upload/                    XhrUploadGateway
+    audio/                     HtmlAudioEngine
   presentation/
-    stores/                    Zustand (mixer, upload)
-    pages/, components/, hooks/
+    session.tsx, services.tsx  context providers
+    stores/                    Zustand (mixer)
+    pages/, components/, i18n/
+test/
+  unit/                        vitest
+  e2e/                         Playwright against the Docker stack
 ```
 
-## Contratos (`packages/contracts`)
+## Contracts (`packages/contracts`)
 
 ```
 src/http/                      requests/responses
@@ -96,17 +103,18 @@ src/messages/                  separation.requested.v1, separation.progressed.v1
 generated/json-schema/
 ```
 
-## Verificación automática ([ADR 0018](adr/0018-reglas-dependencia-ci.md))
+## Automatic checks ([ADR 0018](adr/0018-dependency-rules-in-ci.md))
 
-- `dependency-cruiser` (api, web): prohibido `domain → *`, `application → infrastructure|interface|presentation`, `modules/a/* → modules/b/<interno>`.
-- `import-linter` (worker): contrato `layers` con `adapters > application > domain`.
-- CI falla ante cualquier violación.
+- `dependency-cruiser` (api, web): forbids `domain → *`, `application → infrastructure|interface|presentation`, `modules/a/* → modules/b/<internal>`.
+- `import-linter` (worker): a `layers` contract with `adapters > application > domain`.
+- CI fails on any violation.
 
-## Estrategia de tests
+## Test strategy
 
-| Nivel | Qué | Herramienta |
-|-------|-----|-------------|
-| Unit | Dominio y use cases con fakes en memoria | vitest, pytest |
-| Integración | Adapters contra Postgres/Redis/S3 reales | testcontainers |
-| Contrato | Schemas generados al día, mensajes válidos | script CI |
-| E2E | Flujo de usuario completo | Playwright |
+| Level | What | Tool |
+|-------|------|------|
+| Unit | Domain and use cases with in-memory fakes | vitest, pytest |
+| Integration | Adapters against real Postgres/Redis/S3 | testcontainers (pending) |
+| Contract | Generated schemas up to date, valid messages | CI script |
+| API e2e | Full HTTP flow on the Docker stack, two users | `apps/api/test/e2e.ts` |
+| Browser e2e | User flows on desktop and mobile | Playwright |

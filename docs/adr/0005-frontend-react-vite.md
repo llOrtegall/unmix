@@ -1,17 +1,17 @@
 # 0005 — Frontend: React + Vite + TypeScript
 
-- **Estado:** Aceptada. Gestión de estado reemplazada por [0017](0017-frontend-clean-zustand.md); wavesurfer reemplazado por [0023](0023-previsualizacion-y-picos.md)
-- **Fecha:** 2026-10-27
+- **Status:** Accepted. State management superseded by [0017](0017-frontend-clean-zustand.md); wavesurfer superseded by [0023](0023-previews-and-peaks.md)
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-La app es muy interactiva (mixer de audio) y no necesita SSR ni SEO.
+The app is highly interactive (audio mixer) and needs neither SSR nor SEO.
 
-## Decisión
+## Decision
 
-SPA con React + Vite + TypeScript. wavesurfer.js para waveforms, Web Audio API para la mezcla sincronizada, TanStack Query para datos del servidor.
+SPA with React + Vite + TypeScript. wavesurfer.js for waveforms, the Web Audio API for synchronized mixing, TanStack Query for server data.
 
-## Consecuencias
+## Consequences
 
-- Desarrollo rápido y build simple.
-- Si el producto crece y necesita páginas públicas o SEO, evaluar migración a un framework con SSR.
+- Fast development and a simple build.
+- If the product grows and needs public pages or SEO, evaluate moving to a framework with SSR.

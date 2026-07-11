@@ -1,18 +1,18 @@
-# 0009 — Auth: Better Auth + Google (fase 5)
+# 0009 — Auth: Better Auth + Google (phase 5)
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-27
+- **Status:** Accepted. Implementation details in [0025](0025-sessions-and-ownership.md)
+- **Date:** 2026-10-27
 
-## Contexto
+## Context
 
-El historial debe ser privado por usuario. Se busca una solución gratuita con login de Google sencillo. Auth.js es conocido por el equipo, pero está muy ligado a Next.js, y su mantenimiento pasó al equipo de Better Auth.
+The history must be private per user. We want a free solution with simple Google sign-in. The team knows Auth.js, but it is tightly tied to Next.js, and its maintenance moved to the Better Auth team.
 
-## Decisión
+## Decision
 
-Diferir la autenticación a la fase 5. Usar Better Auth (open source, gratuito) con proveedor Google, integrado en Fastify y en el cliente React. Alternativa aceptable: `@auth/express` si se prefiere Auth.js.
+Defer authentication to phase 5. Use Better Auth (open source, free) with the Google provider, integrated in Fastify and the React client. Acceptable alternative: `@auth/express` if Auth.js is preferred.
 
-## Consecuencias
+## Consequences
 
-- Fases 1–4 funcionan sin login; `tracks.user_id` es nullable hasta entonces.
-- Better Auth crea sus propias tablas en Postgres.
-- Requiere credenciales OAuth en Google Cloud Console.
+- Phases 1–4 work without sign-in; `tracks.user_id` is nullable until then.
+- Better Auth creates its own tables in Postgres.
+- Requires OAuth credentials from the Google Cloud Console.

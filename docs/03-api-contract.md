@@ -1,17 +1,17 @@
-# 03 — Contrato de API (borrador)
+# 03 — API contract
 
-Base: `/api/v1`. JSON. Schemas en `packages/contracts/src/http/api.ts` (zod). Errores con forma `{ "error": { "code": string, "message": string } }`.
+Base: `/api/v1`. JSON. Schemas in `packages/contracts/src/http/api.ts` (zod). Errors look like `{ "error": { "code": string, "message": string } }`.
 
-## Autenticación
+## Authentication
 
-Todas las rutas de `/api/v1` exigen la cookie de sesión de Better Auth. Sin ella responden `401 UNAUTHORIZED` ([ADR 0025](adr/0025-sesiones-y-propiedad.md)). Cada usuario solo ve sus tracks y jobs. Los ajenos responden `404`, igual que los que no existen.
+Every `/api/v1` route requires the Better Auth session cookie. Without it, routes answer `401 UNAUTHORIZED` ([ADR 0025](adr/0025-sessions-and-ownership.md)). Each user only sees their own tracks and jobs. Someone else's answer `404`, the same as ones that do not exist.
 
-Better Auth atiende `/api/auth/*`. El web usa `POST /api/auth/sign-in/social` (`{ "provider": "google", "callbackURL": "/" }`), `GET /api/auth/get-session` y `POST /api/auth/sign-out`.
+Better Auth serves `/api/auth/*`. The web uses `POST /api/auth/sign-in/social` (`{ "provider": "google", "callbackURL": "/" }`), `GET /api/auth/get-session` and `POST /api/auth/sign-out`.
 
-## Subida
+## Upload
 
 ### `POST /uploads`
-Crea un track y devuelve una URL firmada para subir el archivo directo al storage S3.
+Creates a track and returns a presigned URL to upload the file straight to S3 storage.
 
 ```json
 // request
@@ -20,12 +20,12 @@ Crea un track y devuelve una URL firmada para subir el archivo directo al storag
 { "trackId": "uuid", "uploadUrl": "https://...", "expiresIn": 900 }
 ```
 
-Validaciones: tipo permitido, `sizeBytes <= MAX_UPLOAD_MB`.
+Validation: allowed type, `sizeBytes <= MAX_UPLOAD_MB`.
 
-## Trabajos
+## Jobs
 
 ### `POST /tracks/:trackId/jobs`
-Comprueba que el archivo está en el storage y encola la separación. `409 UPLOAD_MISSING` si aún no se subió; `409 TRACK_BUSY` si ya se está separando.
+Checks that the file is in storage and enqueues the separation. `409 UPLOAD_MISSING` if it has not been uploaded yet; `409 TRACK_BUSY` if it is already being separated.
 
 ```json
 // response 202 (JobResponse)
@@ -38,14 +38,14 @@ Comprueba que el archivo está en el storage y encola la separación. `409 UPLOA
 ```
 
 ### `GET /jobs/:jobId/events` (SSE)
-Eventos: `snapshot` (estado actual al conectar), `progress`, `completed`, `failed`. El `data` de todos es un `JobResponse`. Comentario `: ping` cada 15 s. La conexión se cierra al terminar el job.
+Events: `snapshot` (current state on connect), `progress`, `completed`, `failed`. The `data` of each one is a `JobResponse`. A `: ping` comment every 15 s. The connection closes when the job ends.
 
-Etapas (`stage`): `downloading`, `normalizing`, `separating`, `uploading`.
+Stages (`stage`): `downloading`, `normalizing`, `separating`, `uploading`.
 
 ## Tracks
 
 ### `GET /tracks`
-Historial paginado, más nuevo primero (`?cursor=<createdAt ISO>&limit=20`). Respuesta `{ items, nextCursor }`.
+Paginated history, newest first (`?cursor=<createdAt ISO>&limit=20`). Response `{ items, nextCursor }`.
 
 ### `GET /tracks/:trackId`
 ```json
@@ -54,51 +54,54 @@ Historial paginado, más nuevo primero (`?cursor=<createdAt ISO>&limit=20`). Res
   "title": "song",
   "durationSeconds": 241,
   "status": "awaiting_upload|uploaded|separating|completed|failed",
+  "credit": null,
   "createdAt": "2026-10-27T15:00:00Z",
   "latestJobId": "uuid",
   "stems": [
-    { "name": "vocals", "url": "FLAC (presigned GET, 1 h)", "previewUrl": "MP3 128 kbps", "peaksUrl": "JSON de picos", "sizeBytes": 21890660, "silent": false }
+    { "name": "vocals", "url": "FLAC (presigned GET, 1 h)", "previewUrl": "MP3 128 kbps", "peaksUrl": "peaks JSON", "sizeBytes": 21890660, "silent": false }
   ]
 }
 ```
 
+`credit` holds the license attribution of the demo song and is `null` for uploads ([ADR 0026](adr/0026-demo-song-and-cleanup.md)).
+
 ### `GET /tracks/:trackId/download.zip`
-ZIP en streaming con los stems FLAC (sin recomprimir). `409 INVALID_STATE` si el track no está `completed`.
+Streaming ZIP with the FLAC stems (not recompressed). `409 INVALID_STATE` if the track is not `completed`.
 
 ### `DELETE /tracks/:trackId`
-Borra track, stems y archivos. `409 TRACK_BUSY` mientras se separa.
+Deletes the track, its stems and its files. `409 TRACK_BUSY` while it is being separated.
 
-## Salud
+## Health
 
-### `GET /health` (sin prefijo)
-Estado de Postgres, Redis y storage S3. `200` o `503`.
+### `GET /health` (no prefix)
+Status of Postgres, Redis and S3 storage. `200` or `503`.
 
-## Mensajes de la cola `separation`
+## `separation` queue messages
 
-Definidos en `packages/contracts/src/messages/separation.ts` (zod). El worker usa modelos pydantic generados desde el JSON Schema.
+Defined in `packages/contracts/src/messages/separation.ts` (zod). The worker uses pydantic models generated from the JSON Schema.
 
 Job `separation.requested.v1` (data):
 ```json
 { "messageId": "uuid", "jobId": "uuid", "trackId": "uuid", "inputKey": "tracks/{trackId}/original.mp3", "outputPrefix": "tracks/{trackId}/stems", "model": "htdemucs_6s" }
 ```
 
-Opciones del productor: `jobId` = `jobId` del mensaje (idempotencia), `attempts: 3`, `backoff: exponential 5 s`.
+Producer options: `jobId` = the message's `jobId` (idempotency), `attempts: 3`, `backoff: exponential 5 s`.
 
-Progreso (`job.progress`):
+Progress (`job.progress`):
 ```json
 { "stage": "separating", "progress": 42 }
 ```
 
-Resultado (`job.returnvalue`, `SeparationCompletedV1`):
+Result (`job.returnvalue`, `SeparationCompletedV1`):
 ```json
 { "jobId": "uuid", "trackId": "uuid", "durationSeconds": 297.27,
   "stems": [{ "name": "piano", "key": "tracks/{trackId}/stems/piano.flac", "sizeBytes": 9808880, "format": "flac", "silent": true,
               "previewKey": "tracks/{trackId}/stems/piano.preview.mp3", "peaksKey": "tracks/{trackId}/stems/piano.peaks.json" }] }
 ```
 
-Fallo (`job.failedReason`, JSON `SeparationFailureV1`):
+Failure (`job.failedReason`, `SeparationFailureV1` as JSON):
 ```json
 { "code": "DURATION_EXCEEDED", "message": "Track lasts 720 s; the limit is 600 s.", "retryable": false }
 ```
 
-Códigos: `INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED` (no reintentables); `SEPARATION_ERROR`, `STORAGE_ERROR` (reintentables).
+Codes: `INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED` (not retryable); `SEPARATION_ERROR`, `STORAGE_ERROR` (retryable).

@@ -1,6 +1,6 @@
 # web
 
-React 19 + Vite + TypeScript 7 SPA. Clean Architecture ([ADR 0017](../../docs/adr/0017-frontend-clean-zustand.md)), Tailwind v4 + shadcn/ui, Zustand, Spanish/English ([ADR 0024](../../docs/adr/0024-frontend-ui-e-i18n.md)).
+React 19 + Vite + TypeScript 7 SPA. Clean Architecture ([ADR 0017](../../docs/adr/0017-frontend-clean-zustand.md)), Tailwind v4 + shadcn/ui, Zustand, Spanish/English ([ADR 0024](../../docs/adr/0024-frontend-ui-and-i18n.md)).
 
 ```
 src/
@@ -30,8 +30,8 @@ Docker: `docker compose up -d web` serves the build with nginx on port 5173 and 
 
 ## Sign-in
 
-`SessionProvider` loads the session once and shows the Google sign-in page when there is none. A 401 from the API signs the UI out. Sessions live in a same-origin cookie set by Better Auth under `/api/auth` ([ADR 0025](../../docs/adr/0025-sesiones-y-propiedad.md)).
+`SessionProvider` loads the session once and shows the Google sign-in page when there is none. A 401 from the API signs the UI out. Sessions live in a same-origin cookie set by Better Auth under `/api/auth` ([ADR 0025](../../docs/adr/0025-sessions-and-ownership.md)).
 
 ## Playback
 
-Every stem streams its MP3 preview in its own `<audio>` element, kept in sync by `HtmlAudioEngine`. Waveforms come from the worker's peaks JSON ([ADR 0023](../../docs/adr/0023-previsualizacion-y-picos.md)). Space toggles play/pause; Shift + click on Solo isolates one stem.
+Every stem streams its MP3 preview in its own `<audio>` element, kept in sync by `HtmlAudioEngine`. Waveforms come from the worker's peaks JSON ([ADR 0023](../../docs/adr/0023-previews-and-peaks.md)). Space toggles play/pause; Shift + click on Solo isolates one stem.

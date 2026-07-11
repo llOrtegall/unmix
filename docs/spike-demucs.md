@@ -1,32 +1,32 @@
-# Spike — Demucs htdemucs_6s en CPU (fase 1)
+# Spike — Demucs htdemucs_6s on CPU (phase 1)
 
-- **Fecha:** 2026-10-27
+- **Date:** 2026-10-27
 - **Script:** [`services/worker/spike/spike.py`](../services/worker/spike/spike.py)
-- **Máquina:** WSL2, 16 hilos lógicos, 15 GB RAM, sin GPU
+- **Machine:** WSL2, 16 logical threads, 15 GB RAM, no GPU
 - **Software:** Python 3.12, torch 2.8.0+cpu, torchaudio 2.8.0, demucs 4.0.1
 
-## Entrada
+## Input
 
-`thecure.mp3`: MP3 estéreo 44.1 kHz, 4:57 (297 s), 12 MB, con portada incrustada (stream `mjpeg`). ffmpeg descartó la portada al normalizar (`-vn`) sin errores.
+`thecure.mp3`: stereo MP3, 44.1 kHz, 4:57 (297 s), 12 MB, with embedded cover art (`mjpeg` stream). ffmpeg dropped the cover while normalizing (`-vn`) without errors.
 
-## Resultados
+## Results
 
-| Métrica | Valor |
-|---------|-------|
-| Normalización ffmpeg → WAV | 1.4 s |
-| Carga del modelo (primera vez, incluye descarga de pesos) | 10.3 s |
-| **Separación** | **84 s** |
-| **Factor de tiempo real** | **0.28** (≈ 17 s de proceso por minuto de canción) |
-| Pico de RAM | 2.2 GB |
-| Hilos de torch | 8 |
-| Salida | 6 WAV de 50 MB (≈ 300 MB por canción) |
+| Metric | Value |
+|--------|-------|
+| ffmpeg normalization → WAV | 1.4 s |
+| Model load (first time, includes downloading weights) | 10.3 s |
+| **Separation** | **84 s** |
+| **Real-time factor** | **0.28** (≈ 17 s of processing per minute of song) |
+| Peak RAM | 2.2 GB |
+| torch threads | 8 |
+| Output | 6 WAV files of 50 MB (≈ 300 MB per song) |
 
-**Criterio de aceptación (canción de 4 min < ~15 min): cumplido con amplio margen.** Una canción de 10 minutos (límite de entrada) tardaría ≈ 3 minutos.
+**Acceptance criterion (4-minute song in < ~15 min): met by a wide margin.** A 10-minute song (the input limit) would take ≈ 3 minutes.
 
-## Energía por stem
+## Energy per stem
 
-| Stem | RMS vs mezcla |
-|------|---------------|
+| Stem | RMS vs mix |
+|------|------------|
 | vocals | −7.0 dB |
 | guitar | −8.0 dB |
 | bass | −9.5 dB |
@@ -34,17 +34,17 @@
 | drums | −13.2 dB |
 | piano | −27.7 dB |
 
-Residuo de reconstrucción (mezcla − suma de stems): −16.2 dB.
+Reconstruction residual (mix − sum of stems): −16.2 dB.
 
-## Observaciones
+## Observations
 
-- El stem de **piano** queda casi vacío en esta canción (−27.7 dB). Es esperable si no hay piano; los teclados/sintetizadores caen en `other`. Confirma la advertencia de [ADR 0001](adr/0001-modelo-demucs-6s.md): en la UI hay que detectar stems casi silenciosos y mostrarlos atenuados o como "sin contenido".
-- El residuo de −16 dB indica que la suma de stems no reconstruye exactamente la mezcla. Es normal en `htdemucs_6s`; vigilar si se ofrece un "remix" exportado.
-- torch usa 8 hilos por defecto (núcleos físicos). Con un solo worker por máquina no conviene subirlo; con varios workers, repartir hilos (`torch.set_num_threads`).
-- torchaudio 2.8 avisa que en 2.9 cambia el backend de guardado. **Acción para fase 2:** el adapter de Demucs guarda los stems con `soundfile` en lugar de `torchaudio.save`, para poder actualizar torch sin romper nada.
-- 300 MB de WAV por canción: considerar FLAC (≈ 50 % menos, sin pérdida) para almacenamiento y MP3/OGG para la previsualización en el mixer.
-- Calidad percibida: **pendiente de escucha** por el usuario.
+- The **piano** stem is almost empty for this song (−27.7 dB). That is expected when there is no piano; keyboards and synths land in `other`. It confirms the warning in [ADR 0001](adr/0001-demucs-6s-model.md): the UI must detect near-silent stems and show them dimmed or as "no content".
+- The −16 dB residual means the sum of the stems does not rebuild the mix exactly. That is normal for `htdemucs_6s`; keep it in mind if an exported "remix" is ever offered.
+- torch uses 8 threads by default (physical cores). With one worker per machine there is no point raising it; with several workers, split the threads (`torch.set_num_threads`).
+- torchaudio 2.8 warns that its save backend changes in 2.9. **Action for phase 2:** the Demucs adapter saves stems with `soundfile` instead of `torchaudio.save`, so torch can be upgraded without breaking anything.
+- 300 MB of WAV per song: consider FLAC (≈ 50% smaller, lossless) for storage and MP3/OGG for the mixer preview.
+- Perceived quality: **pending a listening test** by the user.
 
-## Decisión
+## Decision
 
-Seguir con `htdemucs_6s` en CPU. No hace falta GPU para la PoC.
+Keep `htdemucs_6s` on CPU. The PoC does not need a GPU.

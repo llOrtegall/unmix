@@ -1,0 +1,17 @@
+# 0018 — Dependency rules in CI
+
+- **Status:** Accepted
+- **Date:** 2026-10-27
+
+## Context
+
+Layers and module boundaries only work if they are always respected; conventions erode.
+
+## Decision
+
+`dependency-cruiser` in `apps/api` and `apps/web`, and `import-linter` in `services/worker`. Minimum rules: `domain` imports nothing external; `application` imports only `domain`; no module imports another module's internals. CI fails on any violation.
+
+## Consequences
+
+- The architecture is checked on every commit, not in reviews.
+- Extra initial setup in phases 2–4.

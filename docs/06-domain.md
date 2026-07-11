@@ -1,32 +1,33 @@
-# 06 — Dominio (DDD)
+# 06 — Domain (DDD)
 
-## Lenguaje ubicuo
+## Ubiquitous language
 
-| Término | Significado |
-|---------|-------------|
-| **Track** | Canción subida por el usuario. Tiene un archivo original y, tras separarse, stems. |
-| **Source media** | Archivo original (audio o video) tal como lo subió el usuario. |
-| **Stem** | Pista aislada de un instrumento: `vocals`, `drums`, `bass`, `guitar`, `piano`, `other`. |
-| **Separation job** | Ejecución de la separación de un track con un modelo concreto. |
-| **Separator** | Motor que separa stems (hoy Demucs). |
-| **Stage** | Fase de un job en curso: `downloading`, `normalizing`, `separating`, `uploading`. |
-| **Mix** | Estado del mixer en el navegador: volumen, mute y solo por stem. |
+| Term | Meaning |
+|------|---------|
+| **Track** | A song uploaded by the user. It has an original file and, once separated, stems. |
+| **Source media** | The original file (audio or video) exactly as the user uploaded it. |
+| **Stem** | One instrument's isolated track: `vocals`, `drums`, `bass`, `guitar`, `piano`, `other`. |
+| **Separation job** | One run of a track's separation with a given model. |
+| **Separator** | The engine that splits stems (Demucs today). |
+| **Stage** | Phase of a running job: `downloading`, `normalizing`, `separating`, `uploading`. |
+| **Mix** | Mixer state in the browser: volume, mute and solo per stem. |
+| **Demo song** | A pre-separated, licensed song every new user receives ([ADR 0026](adr/0026-demo-song-and-cleanup.md)). |
 
-Este vocabulario se usa igual en código, docs y conversación con el cliente.
+This vocabulary is used the same way in code, docs and conversations with the client.
 
 ## Bounded contexts
 
 ```mermaid
 flowchart LR
   subgraph Core
-    S[Separation<br/>jobs, estados, progreso]
+    S[Separation<br/>jobs, status, progress]
   end
   subgraph Supporting
-    L[Library<br/>tracks, stems, historial]
+    L[Library<br/>tracks, stems, history]
   end
   subgraph Generic
     I[Identity<br/>Better Auth]
-    ST[Storage<br/>port S3]
+    ST[Storage<br/>S3 port]
   end
   L -- TrackUploaded --> S
   S -- SeparationCompleted --> L
@@ -35,30 +36,31 @@ flowchart LR
   S --> ST
 ```
 
-| Contexto | Tipo | Dónde vive | Modelado |
-|----------|------|------------|----------|
-| Separation | Core | `apps/api/modules/separation` + `services/worker` | DDD táctico completo |
-| Library | Supporting | `apps/api/modules/library` | DDD táctico ligero |
-| Identity | Generic | `apps/api/modules/identity` | Integración directa con Better Auth |
-| Storage | Infraestructura | port `ObjectStorage` | Sin dominio |
+| Context | Type | Lives in | Modeling |
+|---------|------|----------|----------|
+| Separation | Core | `apps/api/modules/separation` + `services/worker` | Full tactical DDD |
+| Library | Supporting | `apps/api/modules/library` | Light tactical DDD |
+| Identity | Generic | `apps/api/modules/identity` | Direct Better Auth integration |
+| Storage | Infrastructure | `ObjectStorage` port | No domain |
 
-Los contextos no importan código entre sí. Se comunican por eventos de dominio (dentro de la API) o por mensajes versionados de `packages/contracts` (API ↔ worker).
+Contexts do not import each other's code. They talk through domain events (inside the API) or versioned messages from `packages/contracts` (API ↔ worker).
 
-## Agregados
+## Aggregates
 
 ### Library · `Track`
 
-- Raíz: `Track` (`TrackId`, `title`, `SourceMedia`, `Duration`, `status`, `ownerId?`).
-- Contiene: `Stem[]` (`StemName`, `ObjectKey`, `sizeBytes`).
-- Invariantes:
-  - Un track tiene como máximo un stem por `StemName`.
-  - Los stems solo se adjuntan cuando el track está en estado `separating`.
-  - `Duration` ≤ límite configurado (10 min).
+- Root: `Track` (`TrackId`, `ownerId`, `title`, `SourceMedia`, `Duration`, `status`, `credit?`).
+- Contains: `Stem[]` (`StemName`, `ObjectKey`, `sizeBytes`, `silent`, preview and peaks keys).
+- Invariants:
+  - A track has at most one stem per `StemName`.
+  - Stems are attached only while the track is `separating`.
+  - `Duration` ≤ the configured limit (10 min).
+  - Only its owner can see or change it; for anyone else it does not exist ([ADR 0025](adr/0025-sessions-and-ownership.md)).
 
 ### Separation · `SeparationJob`
 
-- Raíz: `SeparationJob` (`JobId`, `TrackId`, `model`, `status`, `Progress`, `stage`, `attempts`, `failure?`).
-- Máquina de estados:
+- Root: `SeparationJob` (`JobId`, `TrackId`, `model`, `status`, `Progress`, `stage`, `attempts`, `failure?`).
+- State machine:
 
 ```mermaid
 stateDiagram-v2
@@ -73,27 +75,28 @@ stateDiagram-v2
   failed --> [*]
 ```
 
-- Invariantes:
-  - `Progress` solo crece dentro de un mismo intento.
-  - `completed` exige el conjunto completo de stems del modelo.
-  - Las transiciones inválidas devuelven `Result.err(InvalidTransition)`.
+- Invariants:
+  - `Progress` only grows within one attempt.
+  - `completed` requires the model's full set of stems.
+  - Invalid transitions return `Result.err(InvalidTransition)`.
+  - A job belongs to whoever owns its track.
 
 ## Value objects
 
-`TrackId`, `JobId`, `StemName`, `Duration`, `MediaType`, `ObjectKey`, `Progress`, `SeparationModel`. Inmutables, validan en su constructor (fábrica que devuelve `Result`).
+`TrackId`, `JobId`, `StemName`, `Duration`, `MediaType`, `ObjectKey`, `Progress`, `SeparationModel`. Immutable; they validate on creation (a factory that returns a `Result`).
 
-## Eventos de dominio
+## Domain events
 
-| Evento | Emisor | Consumidores |
-|--------|--------|--------------|
-| `TrackUploaded` | Library | Separation (crea job) |
-| `SeparationRequested` | Separation | Outbox → cola `separation` → worker |
-| `SeparationProgressed` | Worker | Separation (actualiza job) → SSE |
-| `SeparationCompleted` | Worker | Separation, Library (adjunta stems) |
+| Event | Emitter | Consumers |
+|-------|---------|-----------|
+| `TrackUploaded` | Library | Separation (creates the job) |
+| `SeparationRequested` | Separation | Outbox → `separation` queue → worker |
+| `SeparationProgressed` | Worker | Separation (updates the job) → SSE |
+| `SeparationCompleted` | Worker | Separation, Library (attaches stems) |
 | `SeparationFailed` | Worker | Separation, Library |
 
-Los eventos internos de la API pasan por la outbox ([ADR 0014](adr/0014-transactional-outbox.md)). Los mensajes entre procesos usan los contratos versionados ([ADR 0016](adr/0016-contratos-zod-json-schema-pydantic.md)).
+Events inside the API go through the outbox ([ADR 0014](adr/0014-transactional-outbox.md)). Messages between processes use the versioned contracts ([ADR 0016](adr/0016-contracts-zod-json-schema-pydantic.md)).
 
-## Worker como contexto
+## The worker as part of a context
 
-El worker pertenece al contexto Separation, pero su modelo es independiente del de la API: solo conoce `SeparationTask` (qué separar, dónde dejarlo) y `Stem`. No conoce tracks, usuarios ni estados de job.
+The worker belongs to the Separation context, but its model is independent from the API's: it only knows `SeparationTask` (what to split, where to put it) and `Stem`. It knows nothing about tracks, users or job states.

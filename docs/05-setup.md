@@ -1,17 +1,17 @@
-# 05 — Setup local
+# 05 — Local setup
 
-Entorno de referencia: Windows + WSL2 (Ubuntu), Node 24 vía nvm, Python 3.
+Reference environment: Windows + WSL2 (Ubuntu), Node 24 via nvm, Python 3.
 
-## Prerrequisitos
+## Prerequisites
 
-| Herramienta | Uso | Instalación |
-|-------------|-----|-------------|
-| Docker | Infra local | Docker Desktop con integración WSL activada, o `sudo apt install docker.io docker-compose-v2` |
-| ffmpeg | Extraer/normalizar audio | `sudo apt install ffmpeg` |
-| pnpm | Monorepo JS | `corepack enable && corepack prepare pnpm@latest --activate` |
-| uv | Entorno Python del worker | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Tool | Used for | Install |
+|------|----------|---------|
+| Docker | Local infra | Docker Desktop with WSL integration enabled, or `sudo apt install docker.io docker-compose-v2` |
+| ffmpeg | Extract/normalize audio, trim the demo video | `sudo apt install ffmpeg` |
+| pnpm | JS monorepo | `corepack enable && corepack prepare pnpm@latest --activate` |
+| uv | Worker Python environment | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 
-Verificar:
+Check:
 
 ```bash
 docker --version && docker compose version
@@ -20,7 +20,7 @@ pnpm --version
 uv --version
 ```
 
-## Levantar infraestructura
+## Start the infrastructure
 
 ```bash
 cp .env.example .env
@@ -30,18 +30,40 @@ docker compose ps
 
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
-- S3 (SeaweedFS): http://localhost:9000 (credenciales en `.env` e `infra/seaweedfs/s3.json`)
+- S3 (SeaweedFS): http://localhost:9000 (credentials in `.env` and `infra/seaweedfs/s3.json`)
 
-SeaweedFS no tiene consola web. Para ver el bucket:
+SeaweedFS has no web console. To look inside the bucket:
 
 ```bash
 docker run --rm --network host -e AWS_ACCESS_KEY_ID=unmix -e AWS_SECRET_ACCESS_KEY=unmix-secret \
   -e AWS_DEFAULT_REGION=us-east-1 amazon/aws-cli --endpoint-url http://localhost:9000 s3 ls s3://unmix/ --recursive
 ```
 
-## Recursos
+## Google sign-in
 
-Demucs en CPU usa varios GB de RAM. Si WSL se queda corto, ajustar `%UserProfile%\.wslconfig`:
+The API needs a Google OAuth client ([ADR 0025](adr/0025-sessions-and-ownership.md)):
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), open **Google Auth Platform**. Fill in **Branding** (app name, support email), and in **Audience** keep the app in **Testing** and add your test users.
+2. **Clients → Create client → Web application**:
+   - Authorized JavaScript origins: `http://localhost:5173`
+   - Authorized redirect URIs: `http://localhost:5173/api/auth/callback/google`
+3. Put the values in `.env`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and a `BETTER_AUTH_SECRET` from `openssl rand -base64 32`.
+
+The browser always reaches the API through the web origin (Vite or nginx proxy `/api`), so the redirect URI uses port 5173, not 3000.
+
+## Run everything
+
+```bash
+docker compose up -d                      # + worker, api (3000), web (5173)
+pnpm install
+pnpm --filter @unmix/api demo:seed        # once per fresh stack: the demo song
+```
+
+After recreating the `api` container, restart `web` too: nginx keeps the old API address and answers 502.
+
+## Resources
+
+Demucs on CPU uses several GB of RAM. If WSL runs short, tune `%UserProfile%\.wslconfig`:
 
 ```ini
 [wsl2]

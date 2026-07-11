@@ -1,44 +1,44 @@
-# 00 — Visión y alcance
+# 00 — Vision and scope
 
-## Problema
+## Problem
 
-Músicos, productores, profesores y creadores de contenido quieren aislar partes de una canción: quitar la voz para karaoke, practicar con la batería silenciada o samplear un bajo. Las herramientas comerciales cobran por canción. Las herramientas libres exigen terminal y conocimientos técnicos.
+Musicians, producers, teachers and content creators want to isolate parts of a song: remove the vocals for karaoke, practice with the drums muted, or sample a bass line. Commercial tools charge per song. Free tools require a terminal and technical knowledge.
 
-## Propuesta
+## Proposal
 
-Una web simple donde el usuario:
+A simple website where the user:
 
-1. Arrastra un archivo de audio o video.
-2. Ve el progreso de la separación en tiempo real.
-3. Escucha cada instrumento en un mixer (mute, solo, volumen).
-4. Descarga los stems que necesita.
-5. Vuelve más tarde a su biblioteca de canciones procesadas.
+1. Drags in an audio or video file.
+2. Watches the separation progress in real time.
+3. Listens to each instrument in a mixer (mute, solo, volume).
+4. Downloads the stems they need.
+5. Comes back later to their library of processed songs.
 
-## Usuario objetivo
+## Target user
 
-Persona no técnica. Toda la complejidad (modelos, colas, formatos) queda oculta. La experiencia debe ser clara, rápida de entender y con mensajes de error comprensibles.
+A non-technical person. All the complexity (models, queues, formats) stays hidden. The experience must be clear, quick to understand and have error messages anyone can follow.
 
-## Alcance de la PoC
+## PoC scope
 
-- Entrada: audio (mp3, wav, flac, m4a, ogg) y video (mp4, mov, webm, mkv).
-- Límite: 10 minutos de duración y 200 MB por archivo.
-- Salida: 6 stems — voz, batería, bajo, guitarra, piano, otros.
-- Mixer multitrack con reproducción sincronizada.
-- Descarga individual (WAV) o todo en ZIP.
-- Progreso en vivo.
-- Historial de trabajos.
-- Login con Google (fase 5).
+- Input: audio (mp3, wav, flac, m4a, ogg) and video (mp4, mov, webm, mkv).
+- Limit: 10 minutes long and 200 MB per file.
+- Output: 6 stems — vocals, drums, bass, guitar, piano, other.
+- Multitrack mixer with synchronized playback.
+- Single-stem download (FLAC) or everything as a ZIP.
+- Live progress.
+- Job history.
+- Google sign-in (phase 5).
 
-## Fuera de alcance (por ahora)
+## Out of scope (for now)
 
-- Procesamiento con GPU o en la nube.
-- Transcripción a MIDI o partituras.
-- Edición de audio (cortes, efectos).
-- Pagos, planes o cuotas.
-- App móvil nativa.
+- GPU or cloud processing.
+- Transcription to MIDI or sheet music.
+- Audio editing (cuts, effects).
+- Payments, plans or quotas.
+- Native mobile app.
 
-## Criterios de éxito de la PoC
+## PoC success criteria
 
-- Una canción de 4 minutos se procesa de punta a punta sin intervención manual.
-- Un usuario no técnico completa el flujo sin ayuda.
-- El sistema se recupera de un fallo del worker sin perder el trabajo (reintento).
+- A 4-minute song is processed end to end without manual intervention.
+- A non-technical user completes the flow without help.
+- The system recovers from a worker failure without losing the job (retry).

@@ -2,7 +2,7 @@
 
 Single source of truth for every message that crosses a process boundary: HTTP requests/responses (web ↔ api) and job payloads/results (api ↔ worker).
 
-Pipeline ([ADR 0016](../../docs/adr/0016-contratos-zod-json-schema-pydantic.md)):
+Pipeline ([ADR 0016](../../docs/adr/0016-contracts-zod-json-schema-pydantic.md)):
 
 ```
 zod schemas (src/)  →  JSON Schema (generated/)  →  pydantic models (services/worker, generated)

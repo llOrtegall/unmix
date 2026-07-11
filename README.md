@@ -1,59 +1,61 @@
 # unmix
 
-Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrumentos (stems) con IA de código abierto. Escucha cada stem en un mixer multitrack y descárgalos.
+Proof of concept: upload a song (audio or video) and split it into its instruments (stems) with open-source AI. Listen to each stem in a multitrack mixer and download them.
 
-**Stems (Demucs `htdemucs_6s`):** voz, batería, bajo, guitarra, piano y otros.
+**Stems (Demucs `htdemucs_6s`):** vocals, drums, bass, guitar, piano and other.
 
-## Estado
+## Status
 
-Fases 0–6 completadas: web + API + worker funcionan de punta a punta, con login de Google, bibliotecas privadas, una canción demo y tests e2e en el navegador ([resultados del spike](docs/spike-demucs.md)). Ver [roadmap](docs/02-roadmap.md) para lo que queda abierto.
+Phases 0–6 are done: web, API and worker work end to end, with Google sign-in, private libraries, a demo song and browser e2e tests ([spike results](docs/spike-demucs.md)). See the [roadmap](docs/02-roadmap.md) for what is still open.
 
-Canción demo: "La" de Shane Ivers (https://www.silvermansound.com), con licencia CC BY 4.0 ([assets/demo](assets/demo/README.md)). 
+Demo song: "La" by Shane Ivers (https://www.silvermansound.com), licensed under CC BY 4.0 ([assets/demo](assets/demo/README.md)).
 
 ## Stack
 
-| Capa | Tecnología |
-|------|------------|
+| Layer | Technology |
+|-------|------------|
 | Frontend | React + Vite + TypeScript, Tailwind v4, shadcn/ui, Zustand |
-| API | Node.js + TypeScript, Fastify, Drizzle ORM, zod |
-| Cola | Redis + BullMQ |
+| API | Node.js + TypeScript, Fastify, Drizzle ORM, zod, Better Auth |
+| Queue | Redis + BullMQ |
 | Worker | Python, Demucs (PyTorch, CPU), ffmpeg |
-| Datos | PostgreSQL |
-| Archivos | SeaweedFS (compatible con S3) |
+| Data | PostgreSQL |
+| Files | SeaweedFS (S3-compatible) |
 | Infra | Docker Compose |
 
-## Arquitectura
+## Architecture
 
-Clean Architecture + DDD táctico en los tres servicios; la API es un monolito modular. Ver [06](docs/06-domain.md), [07](docs/07-code-structure.md) y ADRs 0011–0018.
+Clean Architecture + tactical DDD in all three services; the API is a modular monolith. See [06](docs/06-domain.md), [07](docs/07-code-structure.md) and ADRs 0011–0018.
 
-## Estructura
+## Layout
 
 ```
-apps/web          Frontend React
-apps/api          API Node (Fastify)
-services/worker   Worker Python (Demucs)
-packages/contracts Contratos entre procesos (zod → JSON Schema → pydantic)
-docs/             Visión, arquitectura, roadmap, ADRs
+apps/web           React frontend
+apps/api           Node API (Fastify)
+services/worker    Python worker (Demucs)
+packages/contracts Contracts between processes (zod → JSON Schema → pydantic)
+assets/demo        Demo song (CC BY 4.0)
+docs/              Vision, architecture, roadmap, ADRs
 ```
 
-## Documentación
+## Documentation
 
-- [00 — Visión y alcance](docs/00-vision.md)
-- [01 — Arquitectura](docs/01-architecture.md)
+- [00 — Vision and scope](docs/00-vision.md)
+- [01 — Architecture](docs/01-architecture.md)
 - [02 — Roadmap](docs/02-roadmap.md)
-- [03 — Contrato de API](docs/03-api-contract.md)
-- [04 — Modelo de datos](docs/04-data-model.md)
-- [05 — Setup local](docs/05-setup.md)
-- [06 — Dominio (DDD)](docs/06-domain.md)
-- [07 — Estructura de código](docs/07-code-structure.md)
-- [Decisiones de arquitectura (ADR)](docs/adr/)
+- [03 — API contract](docs/03-api-contract.md)
+- [04 — Data model](docs/04-data-model.md)
+- [05 — Local setup](docs/05-setup.md)
+- [06 — Domain (DDD)](docs/06-domain.md)
+- [07 — Code structure](docs/07-code-structure.md)
+- [Architecture decision records (ADR)](docs/adr/)
 
 ## Quickstart
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # add the Google OAuth client, see docs/05-setup.md
 docker compose up -d          # postgres, redis, s3, worker, api, web
-open http://localhost:5173    # sube una canción
+pnpm install && pnpm --filter @unmix/api demo:seed   # once: the demo song
+open http://localhost:5173    # sign in and upload a song
 ```
 
-Detalles en [web](apps/web/README.md), [api](apps/api/README.md) y [worker](services/worker/README.md).
+More in [web](apps/web/README.md), [api](apps/api/README.md) and [worker](services/worker/README.md).
