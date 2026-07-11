@@ -30,3 +30,4 @@ services/worker/spike/output/
 # Playwright
 apps/web/test-results/
 apps/web/playwright-report/
+apps/web/demo-recording/
