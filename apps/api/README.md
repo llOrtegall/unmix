@@ -23,13 +23,20 @@ pnpm dev                 # run with --watch against ../../.env
 pnpm check               # typecheck + dependency rules + unit tests
 pnpm db:generate         # new migration after editing a schema.ts (applied on startup)
 pnpm e2e -- /path/to/song.mp3   # full flow against a running stack, as two test users
+pnpm demo:seed           # separate the demo song once and give it to every user
 ```
+
+Dev scripts (`scripts/`): `seed-demo.ts`, and `test-user.ts` (`sign-in <email> [--demo]` / `delete <domain>`), which the browser suite uses to sign in without Google.
 
 Docker: `docker compose up -d api` (port 3000).
 
 ## Auth
 
 Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sesiones-y-propiedad.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session. A track that belongs to someone else answers 404, and so do its jobs.
+
+## Demo song and cleanup
+
+New users get a ready-to-play copy of the demo song: a `Track` row that points at the shared files under `demo/` ([ADR 0026](../../docs/adr/0026-cancion-demo-y-limpieza.md)). Every hour, `CollectGarbage` removes uploads abandoned for more than 24 h and storage folders with no track row.
 
 ## How a separation flows
 

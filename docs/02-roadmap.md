@@ -78,6 +78,15 @@ Cada fase termina con algo demostrable. No avanzar sin cumplir los criterios de 
 
 **Aceptación:** demo grabada de punta a punta lista para el cliente.
 
+**Estado:** ✅ implementada (2026-10-27), [ADR 0026](adr/0026-cancion-demo-y-limpieza.md).
+- Demo "La" (CC BY 4.0) separada una vez y entregada a cada usuario, con crédito visible.
+- Limpieza horaria de subidas abandonadas (>24 h) y archivos huérfanos.
+- Estados de error con "Reintentar", mensajes para todos los códigos, texto del dropzone para pantallas táctiles y título de página.
+- Suite Playwright: 16 tests en escritorio y móvil (~10 s) más uno `@slow` con Demucs real (~1.2 min).
+- Demo grabada con `demo:record` (50 s, sin audio).
+
+Pendiente: prueba con un usuario real.
+
 ## Futuro
 
 - Worker con GPU (local CUDA o Modal / RunPod / Replicate).

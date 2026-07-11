@@ -6,7 +6,9 @@ Prueba de concepto: sube una canción (audio o video) y sepárala en sus instrum
 
 ## Estado
 
-Fases 0–5 completadas: web + API + worker funcionan de punta a punta, con login de Google y bibliotecas privadas ([resultados del spike](docs/spike-demucs.md)). Siguiente: fase 6 (pulido). Ver [roadmap](docs/02-roadmap.md).
+Fases 0–6 completadas: web + API + worker funcionan de punta a punta, con login de Google, bibliotecas privadas, una canción demo y tests e2e en el navegador ([resultados del spike](docs/spike-demucs.md)). Ver [roadmap](docs/02-roadmap.md) para lo que queda abierto.
+
+Canción demo: "La" de Shane Ivers (https://www.silvermansound.com), con licencia CC BY 4.0 ([assets/demo](assets/demo/README.md)). 
 
 ## Stack
 

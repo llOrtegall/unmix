@@ -20,7 +20,11 @@ Rules enforced by dependency-cruiser: the domain is pure, application only sees 
 pnpm dev        # http://localhost:5173, proxies /api to localhost:3000
 pnpm check      # typecheck + dependency rules + unit tests
 pnpm build      # static build in dist/
+pnpm e2e        # Playwright against the Docker stack (desktop + mobile); add --grep-invert @slow to skip the real Demucs run
+pnpm demo:record   # scripted walkthrough video -> demo-recording/unmix-demo.mp4
 ```
+
+The e2e suite and the recording need the stack running with the demo seeded (`pnpm --filter @unmix/api demo:seed`). Test users are created and removed through `apps/api/scripts/test-user.ts`.
 
 Docker: `docker compose up -d web` serves the build with nginx on port 5173 and proxies `/api` to the API. Stop `pnpm dev` first: both use 5173.
 
