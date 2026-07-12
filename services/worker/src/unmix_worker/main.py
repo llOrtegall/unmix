@@ -57,6 +57,9 @@ async def run() -> None:
             # One CPU-heavy job at a time per process; scale with more containers.
             "concurrency": 1,
             "lockDuration": 60_000,
+            # A crashed worker leaves its job stalled; requeue it twice before failing it,
+            # so one bad restart does not cost the user the song.
+            "maxStalledCount": 2,
         },
     )
     log.info("worker listening on queue %s", SEPARATION_QUEUE)
