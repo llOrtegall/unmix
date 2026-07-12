@@ -58,6 +58,8 @@ export const StemResponse = z.object({
   previewUrl: z.url(),
   /** JSON `{ version: 1, peaks: number[] }`. */
   peaksUrl: z.url(),
+  /** Standard MIDI file of the stem's notes; null when the stem was not transcribed. */
+  midiUrl: z.url().nullable(),
   sizeBytes: z.int(),
   silent: z.boolean(),
 });

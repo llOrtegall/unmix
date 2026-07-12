@@ -46,6 +46,8 @@ export const StemResult = z
     previewKey: z.string().min(1),
     /** JSON `{ version: 1, peaks: number[] }` (0..1) to draw the waveform. */
     peaksKey: z.string().min(1),
+    /** Basic Pitch transcription; absent for drums and silent stems (and older workers). */
+    midiKey: z.string().min(1).nullish(),
   })
   .meta({ title: "StemResult" });
 
