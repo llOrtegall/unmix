@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+import soundfile
+
 from unmix_worker.application.ports import NormalizedAudio
 from unmix_worker.domain.errors import FailureCode, SeparationFailure
 from unmix_worker.domain.result import Err, Ok, Result
@@ -18,14 +20,10 @@ class FfmpegNormalizer:
         if convert.returncode != 0:
             return Err(SeparationFailure(FailureCode.INVALID_MEDIA, _last_line(convert.stderr)))
 
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
-             str(dest)],
-            capture_output=True, text=True,
-        )
+        # The output is our own WAV, so its header is exact; no ffprobe needed.
         try:
-            duration = float(probe.stdout.strip())
-        except ValueError:
+            duration = soundfile.info(dest).duration
+        except RuntimeError:
             return Err(SeparationFailure(FailureCode.INVALID_MEDIA, "Unreadable duration."))
         if duration <= 0:
             return Err(SeparationFailure(FailureCode.INVALID_MEDIA, "Empty audio track."))
