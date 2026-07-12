@@ -31,6 +31,8 @@ uv run --env-file ../../.env scripts/enqueue.py /path/to/song.mp3   # upload + e
 
 Or in Docker: `docker compose up -d worker` (model weights are baked into the image).
 
+The image is multi-stage: uv resolves the venv in a build stage (no package cache kept), and the runtime stage gets the venv, the model weights and a static `ffmpeg` binary. ffprobe is not needed: the normalized WAV's duration is read with `soundfile`. About 1.6 GB, most of it PyTorch.
+
 ## Job lifecycle
 
 | Stage | Progress |
@@ -38,12 +40,12 @@ Or in Docker: `docker compose up -d worker` (model weights are baked into the im
 | downloading | 0–5 |
 | normalizing (ffmpeg → WAV 44.1 kHz) | 5–10 |
 | separating (Demucs) | 10–90 |
-| uploading (FLAC + MP3 preview + peaks JSON per stem) | 90–100 |
+| uploading (FLAC + MP3 preview + peaks JSON per stem, all stems in parallel) | 90–100 |
 
 - Success: return value `SeparationCompletedV1` (stems with key, size, `silent` flag).
 - Business failure (`INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED`): `UnrecoverableError`, no retries. `failedReason` holds a JSON `SeparationFailureV1`.
 - Unexpected failure: regular error, retried by BullMQ according to the producer's `attempts`/`backoff`.
-- Worker crash: the job lock expires (60 s) and BullMQ re-queues the stalled job.
+- Worker crash: the job lock expires (60 s) and BullMQ re-queues the stalled job. `maxStalledCount: 2`, so a job survives two crashes before it fails.
 
 ## Environment
 

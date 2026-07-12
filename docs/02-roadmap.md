@@ -89,9 +89,9 @@ Each phase ends with something demonstrable. Do not move on until its acceptance
 
 - Test with a real (non-technical) user.
 - Integration tests with testcontainers.
-- Worker `maxStalledCount`: a second crash fails the job.
-- Worker image is 3.45 GB.
-- MP3 previews add ~16 s per song (could be encoded in parallel).
+- ~~Worker `maxStalledCount`: a second crash fails the job.~~ Now 2 (2026-10-27).
+- ~~Worker image is 3.45 GB.~~ 1.62 GB: multi-stage build, no uv cache, static ffmpeg (2026-10-27).
+- ~~MP3 previews add ~16 s per song.~~ Stems are encoded and uploaded in parallel (2026-10-27).
 - The browser e2e suite does not run in CI (it needs the full stack).
 
 ## Future

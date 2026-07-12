@@ -23,4 +23,4 @@ Decoding six 5-minute FLAC stems in the browser with Web Audio takes about 630 M
 - Low browser memory and instant playback; the lossless FLAC download is still available.
 - Volume goes from 0 to 100% (`HTMLMediaElement.volume`); iOS does not offer that control.
 - Synchronization is good for listening, not for sample-accurate editing. If that is ever needed, move the `AudioEngine` adapter to Web Audio with buffers decoded in chunks, without touching the rest.
-- Encoding the previews adds about 16 s per song in the worker.
+- Encoding the previews added about 16 s per song in the worker; since all stems are encoded and uploaded in parallel, the whole upload stage takes a few seconds.

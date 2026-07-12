@@ -15,4 +15,4 @@ Docker Compose orchestrates postgres, redis, minio, api, worker and web.
 
 - One command brings everything up.
 - Requires installing Docker in WSL (phase 0).
-- The worker image is heavy (PyTorch); use layer caching and preload the model at build time.
+- The worker image is heavy (PyTorch); use layer caching and preload the model at build time. A multi-stage build without the uv cache and with a static ffmpeg keeps it at ~1.6 GB.
