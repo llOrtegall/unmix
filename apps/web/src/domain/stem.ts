@@ -8,6 +8,8 @@ export interface Stem {
   downloadUrl: string;
   previewUrl: string;
   peaksUrl: string;
+  /** Notes transcribed to a MIDI file; null for drums and silent stems. */
+  midiUrl: string | null;
   sizeBytes: number;
   /** The worker found almost no signal in this stem (e.g. piano in a song without piano). */
   silent: boolean;

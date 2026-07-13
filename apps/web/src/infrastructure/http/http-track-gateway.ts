@@ -31,6 +31,7 @@ export class HttpTrackGateway implements TrackGateway {
         downloadUrl: s.url,
         previewUrl: s.previewUrl,
         peaksUrl: s.peaksUrl,
+        midiUrl: s.midiUrl,
         sizeBytes: s.sizeBytes,
         silent: s.silent,
       })),

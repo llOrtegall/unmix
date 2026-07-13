@@ -33,6 +33,15 @@ test("plays the mix and toggles mute and solo", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Descargar FLAC Voz" })).toHaveAttribute("href", /demo\/stems/);
 });
 
+test("offers MIDI for pitched stems only", async ({ page }) => {
+  await page.getByRole("listitem").filter({ hasText: "Demo" }).getByRole("link").click();
+  await expect(page.getByRole("link", { name: "Descargar MIDI Voz" })).toHaveAttribute("href", /demo\/stems\/vocals\.mid/);
+  await expect(page.getByRole("link", { name: "Descargar MIDI Bajo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Descargar MIDI Batería" })).toHaveCount(0);
+  const midi = await page.request.get((await page.getByRole("link", { name: "Descargar MIDI Voz" }).getAttribute("href"))!);
+  expect((await midi.body()).subarray(0, 4).toString()).toBe("MThd");
+});
+
 test("rejects files that are not audio or video", async ({ page }) => {
   await page.locator('input[type="file"]').setInputFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("hi") });
   await expect(page.getByRole("alert")).toContainText("Ese formato no está soportado");

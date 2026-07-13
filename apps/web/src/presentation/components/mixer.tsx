@@ -1,4 +1,4 @@
-import { Download, Headphones, Loader2, Pause, Play, SkipBack, VolumeX } from "lucide-react";
+import { Download, FileMusic, Headphones, Loader2, Pause, Play, SkipBack, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { isAudible } from "@/domain/mix.ts";
 import type { Stem, StemName } from "@/domain/stem.ts";
@@ -142,6 +142,16 @@ function StemLane({ stem, peaks, max, progress, onSeek }: { stem: Stem; peaks: n
             <Download />
           </a>
         </Button>
+        {stem.midiUrl ? (
+          <Button variant="ghost" size="icon-sm" asChild title={t("mixer.midiHint")}>
+            <a href={stem.midiUrl} download aria-label={`${t("mixer.downloadMidi")} ${name}`}>
+              <FileMusic />
+            </a>
+          </Button>
+        ) : (
+          // Keeps the controls aligned on stems without notes (drums, silent ones).
+          <span aria-hidden className="size-8 shrink-0" />
+        )}
       </div>
     </Card>
   );
