@@ -1,0 +1,1 @@
+ALTER TABLE "stems" ADD COLUMN "midi_key" text;

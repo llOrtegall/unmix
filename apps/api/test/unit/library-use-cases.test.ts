@@ -51,7 +51,7 @@ const demo: DemoSong = {
   inputKey: "demo/original.mp3",
   durationSeconds: 189.1,
   credit: "Music: La by Shane Ivers",
-  stems: [{ name: "vocals", key: "demo/stems/vocals.flac", sizeBytes: 1, silent: false, previewKey: "p", peaksKey: "w" }],
+  stems: [{ name: "vocals", key: "demo/stems/vocals.flac", sizeBytes: 1, silent: false, previewKey: "p", peaksKey: "w", midiKey: null }],
 };
 
 describe("AddDemoTrack", () => {

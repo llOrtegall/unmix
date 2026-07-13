@@ -34,6 +34,7 @@ export const stems = pgTable(
     silent: boolean("silent").notNull(),
     previewKey: text("preview_key").notNull(),
     peaksKey: text("peaks_key").notNull(),
+    midiKey: text("midi_key"),
   },
   (t) => [primaryKey({ columns: [t.trackId, t.name] })],
 );

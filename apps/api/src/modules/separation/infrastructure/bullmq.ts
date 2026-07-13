@@ -47,7 +47,8 @@ export function parseFailure(reason: string | undefined) {
 
 export function parseCompleted(value: unknown) {
   const { durationSeconds, stems } = SeparationCompletedV1.parse(value);
-  return { durationSeconds, stems: stems.map(({ format: _format, ...stem }) => stem) };
+  // Workers older than the MIDI feature omit midiKey.
+  return { durationSeconds, stems: stems.map(({ format: _format, midiKey, ...stem }) => ({ ...stem, midiKey: midiKey ?? null })) };
 }
 
 export function parseProgress(value: unknown) {

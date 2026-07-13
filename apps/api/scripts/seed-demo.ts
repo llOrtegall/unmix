@@ -1,6 +1,7 @@
 // Seeds the demo song (ADR 0026): separates it once through the running stack,
 // keeps its files under demo/ and gives every user who lacks it a ready copy.
 // Usage: node --env-file=../../.env scripts/seed-demo.ts <file> --title <t> --credit <c> [--force]
+// --force separates again and replaces every user's demo copy (e.g. after the worker gains MIDI).
 import { readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { parseArgs } from "node:util";
@@ -34,11 +35,14 @@ const tracks = new DrizzleTrackRepository(new DrizzleTransactions(db));
 
 if (values.force || !(await storage.exists(DEMO_MANIFEST_KEY))) {
   await separateDemo(file, values.title, values.credit);
+  // Existing copies point at the old stems list: replace them with the new one below.
+  const { rowCount } = await pool.query(`delete from tracks where input_key like 'demo/%'`);
+  console.log(`replaced ${rowCount} existing demo track(s)`);
 } else {
   console.log("demo already seeded (use --force to redo it)");
 }
 
-// Backfill: users created before the demo existed.
+// Backfill: users created before the demo existed (or whose copy was just replaced).
 const addDemo = new AddDemoTrack({ tracks, demo: new S3DemoLibrary(storage), ids: uuidGenerator, clock: systemClock });
 const { rows: missing } = await pool.query<{ id: string }>(
   `select id from users u where not exists (select 1 from tracks t where t.user_id = u.id and t.input_key like 'demo/%')`,
@@ -91,7 +95,7 @@ async function separateDemo(path: string, title: string, credit: string) {
     forcePathStyle: true,
     credentials: { accessKeyId: config.s3.accessKey, secretAccessKey: config.s3.secretKey },
   });
-  const keys = [t.inputKey, ...t.stems.flatMap((s) => [s.key, s.previewKey, s.peaksKey])];
+  const keys = [t.inputKey, ...t.stems.flatMap((s) => [s.key, s.previewKey, s.peaksKey, ...(s.midiKey ? [s.midiKey] : [])])];
   for (const key of keys) {
     await s3.send(new CopyObjectCommand({ Bucket: config.s3.bucket, CopySource: `${config.s3.bucket}/${key}`, Key: toDemo(key) }));
   }
@@ -111,6 +115,7 @@ async function separateDemo(path: string, title: string, credit: string) {
       silent: s.silent,
       previewKey: toDemo(s.previewKey),
       peaksKey: toDemo(s.peaksKey),
+      midiKey: s.midiKey ? toDemo(s.midiKey) : null,
     })),
   };
   await s3.send(

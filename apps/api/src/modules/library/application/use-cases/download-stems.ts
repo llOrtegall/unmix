@@ -28,10 +28,10 @@ export class DownloadStems {
     }
     return ok({
       filename: `${t.title} - stems.zip`,
-      entries: t.stems.map((s) => ({
-        name: `${s.name}.flac`,
-        open: () => this.#storage.read(s.key),
-      })),
+      entries: t.stems.flatMap((s) => [
+        { name: `${s.name}.flac`, open: () => this.#storage.read(s.key) },
+        ...(s.midiKey ? [{ name: `midi/${s.name}.mid`, open: () => this.#storage.read(s.midiKey!) }] : []),
+      ]),
     });
   }
 }

@@ -54,6 +54,7 @@ export class DrizzleTrackRepository implements TrackRepository {
             silent: s.silent,
             previewKey: s.previewKey,
             peaksKey: s.peaksKey,
+            midiKey: s.midiKey,
           })),
         );
       }
@@ -118,6 +119,7 @@ function toDomain(row: TrackRow, stemRows: StemRow[]): Track {
         silent: s.silent,
         previewKey: s.previewKey,
         peaksKey: s.peaksKey,
+        midiKey: s.midiKey,
       }),
     ),
     credit: row.credit,

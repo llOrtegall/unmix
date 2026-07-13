@@ -16,7 +16,15 @@ export type SeparationCompleted = DomainEvent<
     jobId: string;
     trackId: string;
     durationSeconds: number;
-    stems: { name: StemName; key: string; sizeBytes: number; silent: boolean; previewKey: string; peaksKey: string }[];
+    stems: {
+      name: StemName;
+      key: string;
+      sizeBytes: number;
+      silent: boolean;
+      previewKey: string;
+      peaksKey: string;
+      midiKey: string | null;
+    }[];
   }
 >;
 

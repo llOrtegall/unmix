@@ -29,6 +29,13 @@
       "when": 1793156222921,
       "tag": "0003_track_credit",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793159320177,
+      "tag": "0004_stem_midi",
+      "breakpoints": true
     }
   ]
 }

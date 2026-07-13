@@ -9,4 +9,6 @@ export interface Stem {
   readonly previewKey: string;
   /** Waveform peaks JSON. */
   readonly peaksKey: string;
+  /** Basic Pitch transcription; null for drums, silent stems and older tracks. */
+  readonly midiKey: string | null;
 }

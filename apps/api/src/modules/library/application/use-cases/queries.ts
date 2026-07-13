@@ -16,7 +16,15 @@ export interface TrackSummaryView {
 
 export interface TrackDetailView extends TrackSummaryView {
   latestJobId: string | null;
-  stems: { name: StemName; url: string; previewUrl: string; peaksUrl: string; sizeBytes: number; silent: boolean }[];
+  stems: {
+    name: StemName;
+    url: string;
+    previewUrl: string;
+    peaksUrl: string;
+    midiUrl: string | null;
+    sizeBytes: number;
+    silent: boolean;
+  }[];
 }
 
 export class GetTrack {
@@ -40,6 +48,7 @@ export class GetTrack {
         url: await this.#storage.presignDownload(s.key, this.#ttl, `${t.title} - ${s.name}.flac`),
         previewUrl: await this.#storage.presignDownload(s.previewKey, this.#ttl),
         peaksUrl: await this.#storage.presignDownload(s.peaksKey, this.#ttl),
+        midiUrl: s.midiKey ? await this.#storage.presignDownload(s.midiKey, this.#ttl, `${t.title} - ${s.name}.mid`) : null,
         sizeBytes: s.sizeBytes,
         silent: s.silent,
       })),
