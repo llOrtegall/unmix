@@ -90,13 +90,17 @@ Each phase ends with something demonstrable. Do not move on until its acceptance
 - Test with a real (non-technical) user.
 - Integration tests with testcontainers.
 - ~~Worker `maxStalledCount`: a second crash fails the job.~~ Now 2 (2026-10-27).
-- ~~Worker image is 3.45 GB.~~ 1.62 GB: multi-stage build, no uv cache, static ffmpeg (2026-10-27).
+- ~~Worker image is 3.45 GB.~~ 1.62 GB: multi-stage build, no uv cache, static ffmpeg (2026-10-27); 2.31 GB with Basic Pitch.
 - ~~MP3 previews add ~16 s per song.~~ Stems are encoded and uploaded in parallel (2026-10-27).
 - The browser e2e suite does not run in CI (it needs the full stack).
+
+## Done after phase 6
+
+- MIDI transcription of pitched stems with Basic Pitch, downloadable per stem and in the ZIP ([ADR 0027](adr/0027-midi-transcription.md)).
 
 ## Future
 
 - GPU worker (local CUDA, or Modal / RunPod / Replicate).
 - RoFormer models for higher-quality vocals.
-- Transcription to MIDI (Basic Pitch).
+- Piano roll view of the MIDI in the mixer.
 - Quotas and plans.

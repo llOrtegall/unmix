@@ -11,6 +11,7 @@
 | **Separator** | The engine that splits stems (Demucs today). |
 | **Stage** | Phase of a running job: `downloading`, `normalizing`, `separating`, `uploading`. |
 | **Mix** | Mixer state in the browser: volume, mute and solo per stem. |
+| **Transcription** | The notes of a pitched stem as a MIDI file ([ADR 0027](adr/0027-midi-transcription.md)). |
 | **Demo song** | A pre-separated, licensed song every new user receives ([ADR 0026](adr/0026-demo-song-and-cleanup.md)). |
 
 This vocabulary is used the same way in code, docs and conversations with the client.

@@ -30,3 +30,4 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0024](0024-frontend-ui-and-i18n.md) | Frontend: dark studio theme, shadcn/ui, Tailwind v4 and in-house i18n |
 | [0025](0025-sessions-and-ownership.md) | Same-origin sessions and track ownership |
 | [0026](0026-demo-song-and-cleanup.md) | Per-user demo song, garbage cleanup and browser e2e |
+| [0027](0027-midi-transcription.md) | MIDI transcription with Basic Pitch (ONNX) |

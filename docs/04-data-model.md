@@ -50,6 +50,7 @@ erDiagram
     boolean silent
     text preview_key
     text peaks_key
+    text midi_key "null: drums, silent, older tracks"
   }
   outbox {
     uuid id PK
@@ -68,6 +69,7 @@ tracks/{trackId}/original.{ext}
 tracks/{trackId}/stems/{name}.flac
 tracks/{trackId}/stems/{name}.preview.mp3
 tracks/{trackId}/stems/{name}.peaks.json
+tracks/{trackId}/stems/{name}.mid       Basic Pitch transcription (ADR 0027)
 demo/manifest.json                     shared demo song (ADR 0026)
 demo/original.mp3, demo/stems/...
 ```

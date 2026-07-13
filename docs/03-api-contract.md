@@ -58,15 +58,17 @@ Paginated history, newest first (`?cursor=<createdAt ISO>&limit=20`). Response `
   "createdAt": "2026-10-27T15:00:00Z",
   "latestJobId": "uuid",
   "stems": [
-    { "name": "vocals", "url": "FLAC (presigned GET, 1 h)", "previewUrl": "MP3 128 kbps", "peaksUrl": "peaks JSON", "sizeBytes": 21890660, "silent": false }
+    { "name": "vocals", "url": "FLAC (presigned GET, 1 h)", "previewUrl": "MP3 128 kbps", "peaksUrl": "peaks JSON", "midiUrl": "MIDI or null", "sizeBytes": 21890660, "silent": false }
   ]
 }
 ```
 
+`midiUrl` is a Standard MIDI file transcribed with Basic Pitch; `null` for drums, silent stems and tracks separated before transcription existed ([ADR 0027](adr/0027-midi-transcription.md)).
+
 `credit` holds the license attribution of the demo song and is `null` for uploads ([ADR 0026](adr/0026-demo-song-and-cleanup.md)).
 
 ### `GET /tracks/:trackId/download.zip`
-Streaming ZIP with the FLAC stems (not recompressed). `409 INVALID_STATE` if the track is not `completed`.
+Streaming ZIP with the FLAC stems (not recompressed) and, when present, `midi/<stem>.mid`. `409 INVALID_STATE` if the track is not `completed`.
 
 ### `DELETE /tracks/:trackId`
 Deletes the track, its stems and its files. `409 TRACK_BUSY` while it is being separated.
@@ -96,7 +98,8 @@ Result (`job.returnvalue`, `SeparationCompletedV1`):
 ```json
 { "jobId": "uuid", "trackId": "uuid", "durationSeconds": 297.27,
   "stems": [{ "name": "piano", "key": "tracks/{trackId}/stems/piano.flac", "sizeBytes": 9808880, "format": "flac", "silent": true,
-              "previewKey": "tracks/{trackId}/stems/piano.preview.mp3", "peaksKey": "tracks/{trackId}/stems/piano.peaks.json" }] }
+              "previewKey": "tracks/{trackId}/stems/piano.preview.mp3", "peaksKey": "tracks/{trackId}/stems/piano.peaks.json",
+              "midiKey": null }] }
 ```
 
 Failure (`job.failedReason`, `SeparationFailureV1` as JSON):

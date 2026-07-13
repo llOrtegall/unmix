@@ -32,7 +32,7 @@ A non-technical person. All the complexity (models, queues, formats) stays hidde
 ## Out of scope (for now)
 
 - GPU or cloud processing.
-- Transcription to MIDI or sheet music.
+- Sheet music (MIDI transcription is available since ADR 0027).
 - Audio editing (cuts, effects).
 - Payments, plans or quotas.
 - Native mobile app.
