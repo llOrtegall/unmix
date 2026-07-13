@@ -31,7 +31,7 @@ uv run --env-file ../../.env scripts/enqueue.py /path/to/song.mp3   # upload + e
 
 Or in Docker: `docker compose up -d worker` (model weights are baked into the image).
 
-The image is multi-stage: uv resolves the venv in a build stage (no package cache kept), and the runtime stage gets the venv, the model weights and a static `ffmpeg` binary. ffprobe is not needed: the normalized WAV's duration is read with `soundfile`. About 1.6 GB, most of it PyTorch.
+The image is multi-stage: uv resolves the venv in a build stage (no package cache kept), and the runtime stage gets the venv, the model weights and a static `ffmpeg` binary. ffprobe is not needed: the normalized WAV's duration is read with `soundfile`. About 2.3 GB: PyTorch, plus the scipy/numba/onnxruntime stack Basic Pitch needs.
 
 ## Job lifecycle
 
@@ -40,9 +40,11 @@ The image is multi-stage: uv resolves the venv in a build stage (no package cach
 | downloading | 0–5 |
 | normalizing (ffmpeg → WAV 44.1 kHz) | 5–10 |
 | separating (Demucs) | 10–90 |
-| uploading (FLAC + MP3 preview + peaks JSON per stem, all stems in parallel) | 90–100 |
+| uploading (FLAC + MP3 preview + peaks JSON + MIDI per stem, all stems in parallel) | 90–100 |
 
-- Success: return value `SeparationCompletedV1` (stems with key, size, `silent` flag).
+- Success: return value `SeparationCompletedV1` (stems with key, size, `silent` flag and, for pitched stems with content, `midiKey`).
+- MIDI: Basic Pitch through its ONNX model, no TensorFlow ([ADR 0027](../../docs/adr/0027-midi-transcription.md)). A transcription failure is logged and the stem ships without MIDI.
+- Logs: each stage's duration (`job <id> separating took 79.8 s`) and the upload time on completion.
 - Business failure (`INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED`): `UnrecoverableError`, no retries. `failedReason` holds a JSON `SeparationFailureV1`.
 - Unexpected failure: regular error, retried by BullMQ according to the producer's `attempts`/`backoff`.
 - Worker crash: the job lock expires (60 s) and BullMQ re-queues the stalled job. `maxStalledCount: 2`, so a job survives two crashes before it fails.

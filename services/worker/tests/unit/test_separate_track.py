@@ -5,6 +5,7 @@ from tests.unit.fakes import (
     FakePreviews,
     FakeSeparator,
     FakeStorage,
+    FakeTranscriber,
     RecordingProgress,
 )
 from unmix_worker.application.separate_track import SeparateTrack
@@ -21,12 +22,13 @@ TASK = SeparationTask(
 )
 
 
-def make(storage=None, normalizer=None, separator=None) -> SeparateTrack:
+def make(storage=None, normalizer=None, separator=None, transcriber=None) -> SeparateTrack:
     return SeparateTrack(
         storage=storage or FakeStorage({TASK.input_key}),
         normalizer=normalizer or FakeNormalizer(),
         separator=separator or FakeSeparator(),
         previews=FakePreviews(),
+        transcriber=transcriber or FakeTranscriber(),
         max_duration_seconds=600,
     )
 
@@ -44,7 +46,7 @@ def test_uploads_every_stem_and_reports_full_progress(tmp_path: Path) -> None:
         f"tracks/track-1/stems/{n}{suffix}"
         for n in StemName
         for suffix in (".flac", ".preview.mp3", ".peaks.json")
-    }
+    } | {f"tracks/track-1/stems/{n}.mid" for n in StemName if n is not StemName.DRUMS}
     assert storage.uploaded["tracks/track-1/stems/vocals.peaks.json"] == "application/json"
     values = [p for _, p in progress.events]
     assert values == sorted(values)
@@ -111,6 +113,7 @@ def test_publishes_stems_concurrently_in_separator_order(tmp_path: Path) -> None
         normalizer=FakeNormalizer(),
         separator=FakeSeparator(),
         previews=ThreadRecordingPreviews(),
+        transcriber=FakeTranscriber(),
         max_duration_seconds=600,
     )
     result = use_case.execute(TASK, RecordingProgress(), tmp_path)
@@ -118,3 +121,30 @@ def test_publishes_stems_concurrently_in_separator_order(tmp_path: Path) -> None
     assert isinstance(result, Ok)
     assert [s.name for s in result.value.stems] == list(StemName)
     assert threading.get_ident() not in seen
+
+
+def test_transcribes_pitched_stems_with_content_only(tmp_path: Path) -> None:
+    levels = {name: -8.0 for name in StemName} | {StemName.PIANO: -27.7}
+    transcriber = FakeTranscriber()
+
+    result = make(separator=FakeSeparator(levels), transcriber=transcriber).execute(
+        TASK, RecordingProgress(), tmp_path
+    )
+
+    assert isinstance(result, Ok)
+    assert sorted(transcriber.calls) == sorted(["vocals", "bass", "guitar", "other"])
+    midi = {s.name: s.midi_key for s in result.value.stems}
+    assert midi[StemName.VOCALS] == "tracks/track-1/stems/vocals.mid"
+    assert midi[StemName.DRUMS] is None and midi[StemName.PIANO] is None
+
+
+def test_ships_stems_without_midi_when_transcription_fails(tmp_path: Path) -> None:
+    storage = FakeStorage({TASK.input_key})
+
+    result = make(storage=storage, transcriber=FakeTranscriber(works=False)).execute(
+        TASK, RecordingProgress(), tmp_path
+    )
+
+    assert isinstance(result, Ok)
+    assert all(s.midi_key is None for s in result.value.stems)
+    assert not any(key.endswith(".mid") for key in storage.uploaded)

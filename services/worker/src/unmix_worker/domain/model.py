@@ -55,6 +55,9 @@ class SeparationTask:
     def peaks_key(self, name: StemName) -> str:
         return f"{self._prefix}/{name}.peaks.json"
 
+    def midi_key(self, name: StemName) -> str:
+        return f"{self._prefix}/{name}.mid"
+
     @property
     def _prefix(self) -> str:
         return self.output_prefix.rstrip("/")
@@ -68,11 +71,17 @@ class Stem:
     silent: bool
     preview_key: str
     peaks_key: str
+    midi_key: str | None = None
 
 
 def is_silent(relative_db: float) -> bool:
     """`relative_db`: stem RMS minus mix RMS, in dB."""
     return relative_db < SILENCE_THRESHOLD_DB
+
+
+def should_transcribe(name: StemName, silent: bool) -> bool:
+    """Pitched stems with content: drums have no notes, and silence only yields noise."""
+    return name is not StemName.DRUMS and not silent
 
 
 @dataclass(frozen=True, slots=True)

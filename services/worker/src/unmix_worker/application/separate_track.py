@@ -9,6 +9,7 @@ from unmix_worker.application.ports import (
     ProgressReporter,
     SeparatedStem,
     StemSeparator,
+    Transcriber,
 )
 from unmix_worker.domain.errors import FailureCode, SeparationFailure
 from unmix_worker.domain.model import (
@@ -18,6 +19,7 @@ from unmix_worker.domain.model import (
     Stem,
     is_silent,
     overall_progress,
+    should_transcribe,
 )
 from unmix_worker.domain.result import Err, Ok, Result
 
@@ -31,12 +33,14 @@ class SeparateTrack:
         normalizer: MediaNormalizer,
         separator: StemSeparator,
         previews: PreviewEncoder,
+        transcriber: Transcriber,
         max_duration_seconds: float,
     ) -> None:
         self._storage = storage
         self._normalizer = normalizer
         self._separator = separator
         self._previews = previews
+        self._transcriber = transcriber
         self._max_duration = max_duration_seconds
 
     def execute(
@@ -77,7 +81,7 @@ class SeparateTrack:
         if not separated:
             return Err(SeparationFailure(FailureCode.SEPARATION_ERROR, "No stems produced."))
 
-        # Encoding and uploads are I/O and subprocesses: one thread per stem.
+        # Encoding, transcription and uploads release the GIL: one thread per stem.
         step(Stage.UPLOADING, 0)
         with ThreadPoolExecutor(max_workers=len(separated)) as pool:
             futures = [pool.submit(self._publish, task, item) for item in separated]
@@ -88,9 +92,17 @@ class SeparateTrack:
         return Ok(SeparationOutcome(task.job_id, task.track_id, audio.duration_seconds, stems))
 
     def _publish(self, task: SeparationTask, item: SeparatedStem) -> Stem:
-        """Encode the preview and upload the FLAC, the preview and the peaks of one stem."""
+        """Encode the preview, transcribe to MIDI and upload everything for one stem."""
+        silent = is_silent(item.relative_db)
         preview = item.path.with_suffix(".preview.mp3")
         self._previews.encode(item.path, preview)
+
+        # MIDI is a bonus: a stem that cannot be transcribed still ships without it.
+        midi_key = None
+        midi = item.path.with_suffix(".mid")
+        if should_transcribe(item.name, silent) and self._transcriber.transcribe(item.path, midi):
+            midi_key = task.midi_key(item.name)
+            self._storage.upload(midi, midi_key, "audio/midi")
 
         key = task.stem_key(item.name)
         size = self._storage.upload(item.path, key, "audio/flac")
@@ -101,7 +113,8 @@ class SeparateTrack:
             item.name,
             key,
             size,
-            is_silent(item.relative_db),
+            silent,
             task.preview_key(item.name),
             task.peaks_key(item.name),
+            midi_key,
         )

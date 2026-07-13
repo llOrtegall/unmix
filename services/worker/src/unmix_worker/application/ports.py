@@ -50,6 +50,12 @@ class PreviewEncoder(Protocol):
         ...
 
 
+class Transcriber(Protocol):
+    def transcribe(self, src: Path, dest: Path) -> bool:
+        """Write a MIDI file of the notes in `src`; False if it could not be transcribed."""
+        ...
+
+
 class StemSeparator(Protocol):
     def separate(
         self,

@@ -33,8 +33,11 @@ COPY --from=build /opt/venv /opt/venv
 COPY --from=build /opt/torch /opt/torch
 COPY --from=build /app/src /app/src
 
+# numba (used by librosa for Basic Pitch) caches compiled code next to the sources by
+# default, which the non-root user cannot write.
 ENV PATH="/opt/venv/bin:$PATH" \
-    TORCH_HOME=/opt/torch
+    TORCH_HOME=/opt/torch \
+    NUMBA_CACHE_DIR=/tmp/numba
 
 WORKDIR /app
 RUN useradd --system --uid 1001 worker

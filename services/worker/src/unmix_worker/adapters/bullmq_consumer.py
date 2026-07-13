@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import tempfile
+import time
 from pathlib import Path
 
 from bullmq import Job, UnrecoverableError
@@ -31,10 +32,16 @@ class BullMqProgress:
         self._job = job
         self._loop = loop
         self._last: tuple[Stage, int] | None = None
+        self.stage_started = time.monotonic()
 
     def report(self, stage: Stage, progress: int) -> None:
         if self._last == (stage, progress):
             return
+        if self._last and self._last[0] != stage:
+            now = time.monotonic()
+            log.info("job %s %s took %.1f s", self._job.id, self._last[0].value,
+                     now - self.stage_started)
+            self.stage_started = now
         self._last = (stage, progress)
         payload = SeparationProgressV1(stage=stage.value, progress=progress)
         asyncio.run_coroutine_threadsafe(
@@ -84,7 +91,9 @@ class SeparationJobProcessor:
                     raise RuntimeError(_encode(failure))
                 raise UnrecoverableError(_encode(failure))
             case Ok(outcome):
-                log.info("job completed id=%s stems=%d", job.id, len(outcome.stems))
+                log.info("job completed id=%s stems=%d midi=%d uploading took %.1f s", job.id,
+                         len(outcome.stems), sum(1 for s in outcome.stems if s.midi_key),
+                         time.monotonic() - progress.stage_started)
                 return _completed(outcome).model_dump(mode="json")
 
 
@@ -101,7 +110,8 @@ def _completed(outcome: SeparationOutcome) -> SeparationCompletedV1:
         durationSeconds=round(outcome.duration_seconds, 3),
         stems=[
             StemResult(name=s.name.value, key=s.key, sizeBytes=s.size_bytes, format="flac",
-                       silent=s.silent, previewKey=s.preview_key, peaksKey=s.peaks_key)
+                       silent=s.silent, previewKey=s.preview_key, peaksKey=s.peaks_key,
+                       midiKey=s.midi_key)
             for s in outcome.stems
         ],
     )

@@ -13,6 +13,11 @@ dependencies = [
   # torchaudio 2.9 drops the backends demucs 4.0.1 uses to load audio.
   "torch==2.8.0",
   "torchaudio==2.8.0",
+  # Audio-to-MIDI. Runs its bundled ONNX model; see the TensorFlow override below.
+  "basic-pitch==0.4.0",
+  "onnxruntime>=1.20",
+  # resampy (a basic-pitch dependency) still imports pkg_resources.
+  "setuptools<81",
 ]
 
 [dependency-groups]
@@ -30,6 +35,16 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/unmix_worker"]
+
+[tool.uv]
+# basic-pitch 0.4 requires tensorflow<2.15.1, which has no Python 3.12 wheels. The worker
+# only uses its ONNX model, so the TensorFlow/CoreML requirements are dropped.
+override-dependencies = [
+  "tensorflow; sys_platform == 'never'",
+  "tensorflow-macos; sys_platform == 'never'",
+  "coremltools; sys_platform == 'never'",
+]
+environments = ["sys_platform == 'linux'"]
 
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
@@ -79,4 +94,6 @@ forbidden_modules = [
   "demucs",
   "soundfile",
   "pydantic",
+  "basic_pitch",
+  "onnxruntime",
 ]

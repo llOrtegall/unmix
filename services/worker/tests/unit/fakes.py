@@ -31,6 +31,18 @@ class FakePreviews:
         dest.write_bytes(b"mp3")
 
 
+class FakeTranscriber:
+    def __init__(self, works: bool = True) -> None:
+        self.works = works
+        self.calls: list[str] = []
+
+    def transcribe(self, src: Path, dest: Path) -> bool:
+        self.calls.append(src.stem)
+        if self.works:
+            dest.write_bytes(b"MThd")
+        return self.works
+
+
 class FakeNormalizer:
     def __init__(self, duration: float = 240.0, failure: SeparationFailure | None = None):
         self.duration = duration

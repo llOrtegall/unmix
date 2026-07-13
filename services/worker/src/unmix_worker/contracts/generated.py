@@ -70,6 +70,7 @@ class StemResult(BaseModel):
     silent: bool
     previewKey: constr(min_length=1)
     peaksKey: constr(min_length=1)
+    midiKey: constr(min_length=1) | None = None
 
 
 class SeparationCompletedV1(BaseModel):

@@ -7,6 +7,7 @@ import signal
 
 from bullmq import Worker
 
+from unmix_worker.adapters.basic_pitch_transcriber import BasicPitchTranscriber
 from unmix_worker.adapters.bullmq_consumer import SeparationJobProcessor
 from unmix_worker.adapters.demucs_separator import DemucsSeparator
 from unmix_worker.adapters.ffmpeg_normalizer import FfmpegNormalizer, FfmpegPreviewEncoder
@@ -34,6 +35,8 @@ async def run() -> None:
     model = env("DEMUCS_MODEL", "htdemucs_6s")
     log.info("loading model %s", model)
     separator.preload(model)
+    transcriber = BasicPitchTranscriber()
+    transcriber.preload()
 
     use_case = SeparateTrack(
         storage=S3Storage(
@@ -46,6 +49,7 @@ async def run() -> None:
         normalizer=FfmpegNormalizer(),
         separator=separator,
         previews=FfmpegPreviewEncoder(),
+        transcriber=transcriber,
         max_duration_seconds=float(env("MAX_DURATION_SECONDS", "600")),
     )
 
