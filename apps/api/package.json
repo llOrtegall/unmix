@@ -11,6 +11,7 @@
     "start": "node src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
     "check": "pnpm typecheck && pnpm lint:deps && pnpm test",
     "db:generate": "drizzle-kit generate",
@@ -33,13 +34,17 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@faker-js/faker": "10.6.0",
     "@swc/core": "1.16.20",
+    "@testcontainers/postgresql": "12.2.1",
     "@types/archiver": "8.0.0",
     "@types/node": "24.19.2",
     "@types/pg": "8.23.1",
+    "@vitest/coverage-v8": "5.0.5",
     "dependency-cruiser": "18.7.0",
     "drizzle-kit": "0.31.11",
     "pino-pretty": "13.2.0",
+    "testcontainers": "12.2.1",
     "typescript": "7.0.2",
     "vitest": "5.0.5"
   }

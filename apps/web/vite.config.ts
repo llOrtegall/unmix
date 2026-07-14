@@ -11,5 +11,15 @@ export default defineConfig({
     // Same-origin API in dev, like nginx does in Docker.
     proxy: { "/api": "http://localhost:3000", "/health": "http://localhost:3000" },
   },
-  test: { include: ["test/unit/**/*.test.ts"], environment: "node" },
+  test: {
+    include: ["src/**/*.test.{ts,tsx}", "test/unit/**/*.test.ts"],
+    environment: "jsdom",
+    setupFiles: ["./vitest.setup.ts"],
+    clearMocks: true,
+    coverage: {
+      provider: "v8",
+      include: ["src/modules/**", "src/components/**", "src/hooks/**"],
+      exclude: ["**/test/**", "**/factory.ts", "src/components/ui/**"],
+    },
+  },
 });
