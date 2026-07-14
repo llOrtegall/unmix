@@ -1,6 +1,6 @@
 # 0013 — Business errors with a Result type
 
-- **Status:** Accepted
+- **Status:** Superseded by [0028](0028-clean-architecture-skills.md)
 - **Date:** 2026-10-27
 
 ## Context

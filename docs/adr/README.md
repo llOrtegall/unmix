@@ -16,9 +16,9 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0010](0010-sse-progress.md) | Live progress: SSE |
 | [0011](0011-clean-architecture-ddd.md) | Clean Architecture + tactical DDD |
 | [0012](0012-modular-monolith.md) | Backend: modular monolith by bounded context |
-| [0013](0013-result-type.md) | Business errors with a Result type |
+| [0013](0013-result-type.md) | Business errors with a Result type (superseded by 0028) |
 | [0014](0014-transactional-outbox.md) | Transactional outbox |
-| [0015](0015-manual-composition-root.md) | Manual dependency injection |
+| [0015](0015-manual-composition-root.md) | Manual dependency injection (superseded by 0028) |
 | [0016](0016-contracts-zod-json-schema-pydantic.md) | Contracts: zod → JSON Schema → pydantic |
 | [0017](0017-frontend-clean-zustand.md) | Frontend: Clean Architecture + Zustand |
 | [0018](0018-dependency-rules-in-ci.md) | Dependency rules in CI |
@@ -31,3 +31,4 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0025](0025-sessions-and-ownership.md) | Same-origin sessions and track ownership |
 | [0026](0026-demo-song-and-cleanup.md) | Per-user demo song, garbage cleanup and browser e2e |
 | [0027](0027-midi-transcription.md) | MIDI transcription with Basic Pitch (ONNX) |
+| [0028](0028-clean-architecture-skills.md) | Adopt the clean-architecture skills |

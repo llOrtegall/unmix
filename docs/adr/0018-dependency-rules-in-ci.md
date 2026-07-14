@@ -1,6 +1,6 @@
 # 0018 — Dependency rules in CI
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [0028](0028-clean-architecture-skills.md)
 - **Date:** 2026-10-27
 
 ## Context
