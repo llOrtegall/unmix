@@ -1,7 +1,7 @@
 import type { JobResponse } from "@unmix/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { parse, sendError } from "../../../shared/interface/http.ts";
+import { sendError } from "../../../shared/interface/http.ts";
 import type { JobUpdates, JobView } from "../application/ports/index.ts";
 import type { GetJob } from "../application/use-cases/get-job.ts";
 import type { RequestSeparation } from "../application/use-cases/request-separation.ts";
@@ -28,24 +28,21 @@ export function toJobResponse(job: JobView): JobResponse {
 
 export function separationRoutes(app: FastifyInstance, uc: SeparationUseCases): void {
   app.post("/tracks/:trackId/jobs", async (req, reply) => {
-    const params = parse(TrackParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.requestSeparation.execute(params.value.trackId, req.userId);
+    const params = TrackParams.parse(req.params);
+    const result = await uc.requestSeparation.execute(params.trackId, req.userId);
     return result.isOk() ? reply.status(202).send(toJobResponse(result.value)) : sendError(reply, result.error);
   });
 
   app.get("/jobs/:jobId", async (req, reply) => {
-    const params = parse(JobParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.getJob.execute(params.value.jobId, req.userId);
+    const params = JobParams.parse(req.params);
+    const result = await uc.getJob.execute(params.jobId, req.userId);
     return result.isOk() ? toJobResponse(result.value) : sendError(reply, result.error);
   });
 
   // Server-Sent Events (ADR 0010): snapshot first, then live changes until the job ends.
   app.get("/jobs/:jobId/events", async (req, reply) => {
-    const params = parse(JobParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const current = await uc.getJob.execute(params.value.jobId, req.userId);
+    const params = JobParams.parse(req.params);
+    const current = await uc.getJob.execute(params.jobId, req.userId);
     if (current.isErr()) return sendError(reply, current.error);
 
     reply.hijack();
@@ -69,7 +66,7 @@ export function separationRoutes(app: FastifyInstance, uc: SeparationUseCases): 
       res.end();
     };
 
-    const unsubscribe = uc.updates.subscribe(params.value.jobId, (job) => {
+    const unsubscribe = uc.updates.subscribe(params.jobId, (job) => {
       if (job.status === "completed" || job.status === "failed") {
         send(job.status, job);
         end();

@@ -15,9 +15,7 @@ export const ACCEPTED_CONTENT_TYPES = [
   "video/x-matroska",
 ] as const;
 
-export const ApiError = z.object({
-  error: z.object({ code: z.string(), message: z.string() }),
-});
+export const ApiError = z.object({ code: z.string(), message: z.string() });
 export type ApiError = z.infer<typeof ApiError>;
 
 export const CreateUploadRequest = z.object({

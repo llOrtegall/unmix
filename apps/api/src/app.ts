@@ -1,7 +1,9 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyServerOptions } from "fastify";
 import type { Identity } from "./modules/identity/index.ts";
-import { identityRoutes, requireUser } from "./modules/identity/routes.ts";
+import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.ts";
+import { requireUser } from "./middlewares/requireUser.ts";
+import { identityRoutes } from "./modules/identity/routes.ts";
 import { type LibraryUseCases, libraryRoutes } from "./modules/library/interface/routes.ts";
 import { type SeparationUseCases, separationRoutes } from "./modules/separation/interface/routes.ts";
 
@@ -18,14 +20,8 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
   const app = Fastify(options);
   app.register(cors, { origin: deps.webOrigin, methods: ["GET", "POST", "DELETE"] });
 
-  app.setErrorHandler((cause, req, reply) => {
-    const error = cause as Error & { statusCode?: number };
-    req.log.error({ err: error }, "unhandled error");
-    const status = error.statusCode ?? 500;
-    const code = status < 500 ? "BAD_REQUEST" : "INTERNAL_ERROR";
-    const message = status < 500 ? error.message : "Something went wrong. Please try again.";
-    void reply.status(status).send({ error: { code, message } });
-  });
+  app.setErrorHandler(errorHandler);
+  app.setNotFoundHandler(notFoundHandler);
 
   app.get("/health", async (_req, reply) => {
     const checks = await deps.health();

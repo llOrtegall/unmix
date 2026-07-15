@@ -27,7 +27,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!result.ok) setState({ status: "signed-out", error: result.error.code });
       else setState(result.value ? { status: "signed-in", user: result.value } : { status: "signed-out", error: authErrorFromUrl() });
     });
-    const unsubscribe = session.onExpired(() => setState({ status: "signed-out", error: "UNAUTHORIZED" }));
+    const unsubscribe = session.onExpired(() => setState({ status: "signed-out", error: "session.required" }));
     return () => {
       active = false;
       unsubscribe();

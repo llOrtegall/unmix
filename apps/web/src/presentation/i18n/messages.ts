@@ -80,7 +80,7 @@ const es = {
   "error.INVALID_STATE": "Los stems todavía no están listos.",
   "error.NETWORK_ERROR": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
   "error.UPLOAD_CANCELLED": "Subida cancelada.",
-  "error.UNAUTHORIZED": "Tu sesión terminó. Vuelve a iniciar sesión.",
+  "error.session.required": "Tu sesión terminó. Vuelve a iniciar sesión.",
   "error.AUTH_FAILED": "No pudimos iniciar sesión con Google. Inténtalo de nuevo.",
   "error.generic": "Algo salió mal. Inténtalo de nuevo.",
 } as const;
@@ -169,7 +169,7 @@ const en: Record<MessageKey, string> = {
   "error.INVALID_STATE": "The stems aren't ready yet.",
   "error.NETWORK_ERROR": "Can't reach the server. Check your connection and try again.",
   "error.UPLOAD_CANCELLED": "Upload cancelled.",
-  "error.UNAUTHORIZED": "Your session ended. Please sign in again.",
+  "error.session.required": "Your session ended. Please sign in again.",
   "error.AUTH_FAILED": "We couldn't sign you in with Google. Please try again.",
   "error.generic": "Something went wrong. Please try again.",
 };

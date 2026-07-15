@@ -73,7 +73,7 @@ export class HttpTrackGateway implements TrackGateway {
     if (res.status === 401) this.#onUnauthorized();
     if (!res.ok) {
       const body = ApiError.safeParse(await res.json().catch(() => null));
-      return { ok: false, error: body.success ? body.data.error : { code: "INTERNAL_ERROR", message: res.statusText } };
+      return { ok: false, error: body.success ? body.data : { code: "INTERNAL_ERROR", message: res.statusText } };
     }
     if (!schema) return { ok: true, value: undefined };
     const parsed = schema.safeParse(await res.json());

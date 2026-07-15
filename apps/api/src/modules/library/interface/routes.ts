@@ -2,7 +2,7 @@ import { ZipArchive } from "archiver";
 import { CreateUploadRequest, ListTracksQuery } from "@unmix/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { parse, sendError } from "../../../shared/interface/http.ts";
+import { sendError } from "../../../shared/interface/http.ts";
 import type { DeleteTrack } from "../application/use-cases/delete-track.ts";
 import type { DownloadStems } from "../application/use-cases/download-stems.ts";
 import type { GetTrack, ListTracks } from "../application/use-cases/queries.ts";
@@ -20,36 +20,31 @@ export interface LibraryUseCases {
 
 export function libraryRoutes(app: FastifyInstance, uc: LibraryUseCases): void {
   app.post("/uploads", async (req, reply) => {
-    const input = parse(CreateUploadRequest, req.body);
-    if (input.isErr()) return sendError(reply, input.error);
-    const result = await uc.registerUpload.execute({ ...input.value, ownerId: req.userId });
+    const input = CreateUploadRequest.parse(req.body);
+    const result = await uc.registerUpload.execute({ ...input, ownerId: req.userId });
     return result.isOk() ? reply.status(201).send(result.value) : sendError(reply, result.error);
   });
 
   app.get("/tracks", async (req, reply) => {
-    const query = parse(ListTracksQuery, req.query);
-    if (query.isErr()) return sendError(reply, query.error);
-    return uc.listTracks.execute(req.userId, query.value.cursor, query.value.limit);
+    const query = ListTracksQuery.parse(req.query);
+    return uc.listTracks.execute(req.userId, query.cursor, query.limit);
   });
 
   app.get("/tracks/:trackId", async (req, reply) => {
-    const params = parse(TrackParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.getTrack.execute(params.value.trackId, req.userId);
+    const params = TrackParams.parse(req.params);
+    const result = await uc.getTrack.execute(params.trackId, req.userId);
     return result.isOk() ? result.value : sendError(reply, result.error);
   });
 
   app.delete("/tracks/:trackId", async (req, reply) => {
-    const params = parse(TrackParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.deleteTrack.execute(params.value.trackId, req.userId);
+    const params = TrackParams.parse(req.params);
+    const result = await uc.deleteTrack.execute(params.trackId, req.userId);
     return result.isOk() ? reply.status(204).send() : sendError(reply, result.error);
   });
 
   app.get("/tracks/:trackId/download.zip", async (req, reply) => {
-    const params = parse(TrackParams, req.params);
-    if (params.isErr()) return sendError(reply, params.error);
-    const result = await uc.downloadStems.execute(params.value.trackId, req.userId);
+    const params = TrackParams.parse(req.params);
+    const result = await uc.downloadStems.execute(params.trackId, req.userId);
     if (result.isErr()) return sendError(reply, result.error);
 
     // FLAC is already compressed: store entries without deflate.

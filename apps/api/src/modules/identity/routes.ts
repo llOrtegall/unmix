@@ -1,12 +1,5 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Identity } from "./index.ts";
-
-declare module "fastify" {
-  interface FastifyRequest {
-    /** Set by `requireUser` on every protected route. */
-    userId: string;
-  }
-}
 
 export function toHeaders(req: FastifyRequest): Headers {
   const headers = new Headers();
@@ -35,15 +28,4 @@ export function identityRoutes(app: FastifyInstance, identity: Identity): void {
       return reply.send(response.body ? Buffer.from(await response.arrayBuffer()) : null);
     },
   });
-}
-
-/** preHandler for /api/v1: 401 without a session, otherwise sets `req.userId`. */
-export function requireUser(identity: Identity) {
-  return async (req: FastifyRequest, reply: FastifyReply) => {
-    const userId = await identity.currentUserId(toHeaders(req));
-    if (!userId) {
-      return reply.status(401).send({ error: { code: "UNAUTHORIZED", message: "Sign in to continue." } });
-    }
-    req.userId = userId;
-  };
 }
