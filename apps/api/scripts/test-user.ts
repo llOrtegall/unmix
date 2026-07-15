@@ -7,14 +7,13 @@ import { AddDemoTrack } from "../src/modules/library/application/use-cases/add-d
 import { DrizzleTrackRepository } from "../src/modules/library/infrastructure/drizzle-track-repository.ts";
 import { S3DemoLibrary } from "../src/modules/library/infrastructure/s3-demo-library.ts";
 import { S3Storage } from "../src/modules/library/infrastructure/s3-storage.ts";
-import { loadConfig } from "../src/shared/infrastructure/config.ts";
+import { config } from "../src/config.ts";
 import { createDatabase, DrizzleTransactions } from "../src/shared/infrastructure/db.ts";
 import { systemClock, uuidGenerator } from "../src/shared/infrastructure/system.ts";
 import { signInAs } from "./test-session.ts";
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: { demo: { type: "boolean", default: false } } });
 const [command, arg] = positionals;
-const config = loadConfig();
 const client = new pg.Client({ connectionString: config.databaseUrl });
 await client.connect();
 

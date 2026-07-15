@@ -14,7 +14,7 @@ import type { StemName } from "../src/modules/library/domain/stem.ts";
 import { DrizzleTrackRepository } from "../src/modules/library/infrastructure/drizzle-track-repository.ts";
 import { DEMO_MANIFEST_KEY, S3DemoLibrary } from "../src/modules/library/infrastructure/s3-demo-library.ts";
 import { S3Storage } from "../src/modules/library/infrastructure/s3-storage.ts";
-import { loadConfig } from "../src/shared/infrastructure/config.ts";
+import { config } from "../src/config.ts";
 import { createDatabase, DrizzleTransactions } from "../src/shared/infrastructure/db.ts";
 import { systemClock, uuidGenerator } from "../src/shared/infrastructure/system.ts";
 import { signInAs } from "./test-session.ts";
@@ -26,7 +26,6 @@ const { values, positionals } = parseArgs({
 const file = positionals[0];
 if (!file || !values.title || !values.credit) throw new Error("usage: seed-demo.ts <file> --title <t> --credit <c> [--force]");
 
-const config = loadConfig();
 const API = process.env.E2E_API_URL ?? `http://localhost:${config.port}/api/v1`;
 const TYPES: Record<string, string> = { ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac" };
 const storage = new S3Storage(config.s3);

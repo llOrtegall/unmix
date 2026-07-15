@@ -36,12 +36,11 @@ import { DrizzleJobRepository } from "./modules/separation/infrastructure/drizzl
 import { InMemoryJobUpdates } from "./modules/separation/infrastructure/in-memory-job-updates.ts";
 import { LibraryTrackCatalog } from "./modules/separation/infrastructure/library-track-catalog.ts";
 import { listenToSeparationQueue } from "./modules/separation/infrastructure/bullmq-queue-listener.ts";
-import { loadConfig } from "./shared/infrastructure/config.ts";
+import { config } from "./config.ts";
 import { createDatabase, DrizzleTransactions, runMigrations } from "./shared/infrastructure/db.ts";
 import { OutboxEventPublisher, OutboxRelay, type OutboxRoute } from "./shared/infrastructure/outbox.ts";
 import { systemClock, uuidGenerator } from "./shared/infrastructure/system.ts";
 
-const config = loadConfig();
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Infrastructure

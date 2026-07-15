@@ -9,7 +9,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { ObjectStorage } from "../application/ports/index.ts";
-import type { Config } from "../../../shared/infrastructure/config.ts";
+import type { Config } from "../../../config.ts";
 
 export class S3Storage implements ObjectStorage {
   #client: S3Client;
