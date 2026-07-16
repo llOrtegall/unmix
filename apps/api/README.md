@@ -1,20 +1,28 @@
 # api
 
-Node.js 24 + TypeScript 7 API: Fastify, Drizzle (Postgres), BullMQ (Redis), S3 presigned URLs. Modular monolith with Clean Architecture ([docs/07](../../docs/07-code-structure.md)); layer and module rules are enforced by dependency-cruiser.
+Node.js 24 + TypeScript 7 API: Fastify, Drizzle (Postgres), BullMQ (Redis), S3 presigned URLs. Modular monolith that follows the clean-architecture skills ([ADR 0028](../../docs/adr/0028-clean-architecture-skills.md), [docs/07](../../docs/07-code-structure.md)); layer and module rules are enforced by dependency-cruiser.
 
 Node runs the `.ts` sources directly (type stripping), so there is no build step. `tsc` only typechecks ([ADR 0022](../../docs/adr/0022-typescript-without-build.md)).
 
+The migration is in progress ([roadmap](../../docs/02-roadmap.md#refactor-to-the-clean-architecture-skills)): `shared` and `library` follow the new layout, while `separation` and `identity` still use the previous one.
+
 ```
 src/
-  main.ts                 composition root: wiring, migrations, background processes
+  config.ts               zod-validated environment (the only reader of process.env)
   app.ts                  Fastify app (routes, CORS, error handler, /health)
-  shared/kernel/          Result, DomainEvent/AggregateRoot, ports (Clock, IdGenerator, TransactionManager, EventPublisher)
-  shared/infrastructure/  config, Drizzle + AsyncLocalStorage transactions, outbox publisher/relay
-  shared/interface/       zod parsing and error -> HTTP mapping
-  modules/identity/       Better Auth (Google), /api/auth routes, session guard for /api/v1
-  modules/library/        Track aggregate: uploads, history, detail, ZIP, delete
+  main.ts                 wiring, migrations, background processes
+  middlewares/            errorHandler (DomainError category -> HTTP, { code, message }), requireUser
+  routes/                 Fastify plugins that receive a module and call one use case per route
+  modules/shared/         DomainError categories, UserId, JobId, ObjectKey, TransactionRepository;
+                          Drizzle database, AsyncLocalStorage transactions, outbox
+  modules/library/        domain/ (Track and its value objects, repositories), application/ (use cases,
+                          factory.ts), infrastructure/ (Drizzle, S3, demo manifest, ZIP), test/
   modules/separation/     SeparationJob aggregate: request, lifecycle, SSE, queue adapters, reconciliation
+  modules/identity/       Better Auth (Google), /api/auth routes
+  shared/kernel/          Result, DomainEvent/AggregateRoot and ports, still used by separation
 ```
+
+Tests sit next to the code: `modules/<module>/test/{domain,application,helpers}` with Object Mothers and RepositoryMothers, and `routes/*.test.ts` / `middlewares/*.test.ts` with Fastify `inject`. `pnpm test:coverage` reports coverage.
 
 ## Commands
 
@@ -36,7 +44,7 @@ Better Auth with Google, mounted at `/api/auth` and reached by the browser throu
 
 ## Demo song and cleanup
 
-New users get a ready-to-play copy of the demo song: a `Track` row that points at the shared files under `demo/` ([ADR 0026](../../docs/adr/0026-demo-song-and-cleanup.md)). Every hour, `CollectGarbage` removes uploads abandoned for more than 24 h and storage folders with no track row.
+New users get a ready-to-play copy of the demo song: a `Track` row that points at the shared files under `demo/` ([ADR 0026](../../docs/adr/0026-demo-song-and-cleanup.md)). Every hour, the `collectGarbage` use case removes uploads abandoned for more than 24 h and storage folders with no track row.
 
 ## How a separation flows
 
