@@ -28,7 +28,7 @@ const BY_EXTENSION: Record<string, string> = {
 
 export const MAX_UPLOAD_MB = 200;
 
-export type UploadRejection = { code: "UNSUPPORTED_MEDIA_TYPE"; type: string } | { code: "FILE_TOO_LARGE"; limitMb: number };
+export type UploadRejection = { code: "track.unsupported_media_type"; type: string } | { code: "track.file_too_large"; limitMb: number };
 
 /** Browsers report some types inconsistently (e.g. empty for .mkv): fall back to the extension. */
 export function resolveContentType(file: { name: string; type: string }): string {
@@ -39,7 +39,7 @@ export function resolveContentType(file: { name: string; type: string }): string
 
 export function checkUpload(file: { name: string; type: string; size: number }): Result<string, UploadRejection> {
   const type = resolveContentType(file);
-  if (!ACCEPTED_TYPES[type]) return err({ code: "UNSUPPORTED_MEDIA_TYPE", type: type || file.name });
-  if (file.size > MAX_UPLOAD_MB * 1_048_576) return err({ code: "FILE_TOO_LARGE", limitMb: MAX_UPLOAD_MB });
+  if (!ACCEPTED_TYPES[type]) return err({ code: "track.unsupported_media_type", type: type || file.name });
+  if (file.size > MAX_UPLOAD_MB * 1_048_576) return err({ code: "track.file_too_large", limitMb: MAX_UPLOAD_MB });
   return ok(type);
 }

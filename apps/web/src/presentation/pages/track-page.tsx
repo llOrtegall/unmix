@@ -48,7 +48,7 @@ export function TrackPage({ id }: { id: string }) {
       {error ? (
         <Card className="flex flex-col items-center gap-4 p-8 text-center text-sm text-muted-foreground">
           {errorMessage(t, error.code)}
-          {error.code === "TRACK_NOT_FOUND" ? (
+          {error.code === "track.not_found" ? (
             <Button variant="outline" size="sm" asChild>
               <Link href="/">{t("app.library")}</Link>
             </Button>

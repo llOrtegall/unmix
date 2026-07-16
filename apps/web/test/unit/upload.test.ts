@@ -9,8 +9,8 @@ describe("upload policy", () => {
   });
 
   it("rejects unknown types and big files", () => {
-    expect(checkUpload({ name: "a.exe", type: "application/x-msdownload", size: 1 })._unsafeUnwrapErr().code).toBe("UNSUPPORTED_MEDIA_TYPE");
-    expect(checkUpload({ name: "a.mp3", type: "audio/mpeg", size: 300 * 1_048_576 })._unsafeUnwrapErr().code).toBe("FILE_TOO_LARGE");
+    expect(checkUpload({ name: "a.exe", type: "application/x-msdownload", size: 1 })._unsafeUnwrapErr().code).toBe("track.unsupported_media_type");
+    expect(checkUpload({ name: "a.mp3", type: "audio/mpeg", size: 300 * 1_048_576 })._unsafeUnwrapErr().code).toBe("track.file_too_large");
   });
 });
 
