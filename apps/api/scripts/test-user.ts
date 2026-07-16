@@ -3,13 +3,10 @@
 // delete <domain>            deletes every user whose email ends in @<domain> (rows cascade)
 import { parseArgs } from "node:util";
 import pg from "pg";
-import { AddDemoTrack } from "../src/modules/library/application/use-cases/add-demo-track.ts";
-import { DrizzleTrackRepository } from "../src/modules/library/infrastructure/drizzle-track-repository.ts";
-import { S3DemoLibrary } from "../src/modules/library/infrastructure/s3-demo-library.ts";
-import { S3Storage } from "../src/modules/library/infrastructure/s3-storage.ts";
 import { config } from "../src/config.ts";
-import { createDatabase, DrizzleTransactions } from "../src/shared/infrastructure/db.ts";
-import { systemClock, uuidGenerator } from "../src/shared/infrastructure/system.ts";
+import { libraryModule } from "../src/modules/library/application/factory.ts";
+import { createDatabase } from "../src/modules/shared/infrastructure/database.ts";
+import { DrizzleTransactionRepository } from "../src/modules/shared/infrastructure/DrizzleTransactionRepository.ts";
 import { signInAs } from "./test-session.ts";
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: { demo: { type: "boolean", default: false } } });
@@ -21,9 +18,8 @@ if (command === "sign-in" && arg) {
   const session = await signInAs(client, arg);
   if (values.demo) {
     const { db, pool } = createDatabase(config.databaseUrl);
-    const demo = new S3DemoLibrary(new S3Storage(config.s3));
-    const tracks = new DrizzleTrackRepository(new DrizzleTransactions(db));
-    if (!(await new AddDemoTrack({ tracks, demo, ids: uuidGenerator, clock: systemClock }).execute(session.userId))) {
+    const library = libraryModule(new DrizzleTransactionRepository(db), config.s3, config.maxUploadBytes);
+    if (!(await library.addDemoTrack(session.userId))) {
       throw new Error("no demo seeded: run pnpm --filter @unmix/api demo:seed");
     }
     await pool.end();

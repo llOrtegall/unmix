@@ -8,7 +8,7 @@ import {
 } from "@unmix/contracts";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
-import type { OutboxRoute } from "../../../shared/infrastructure/outbox.ts";
+import type { OutboxRoute } from "../../shared/infrastructure/outbox.ts";
 import type { QueueInspector, QueueJobState } from "../application/ports/index.ts";
 import type { SeparationRequested } from "../domain/events.ts";
 

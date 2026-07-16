@@ -1,12 +1,12 @@
-// Architecture rules (ADR 0018). Dependencies point toward the domain;
-// modules talk to each other only through their index.ts.
+// Architecture rules (ADR 0018, 0028). Dependencies point toward the domain; modules reach
+// each other only through their domain or their application factory.
 module.exports = {
   forbidden: [
     {
       name: "domain-is-pure",
       severity: "error",
       from: { path: "^src/(modules/[^/]+|shared)/domain/" },
-      to: { pathNot: ["^src/(modules/[^/]+/domain|shared/kernel)/", "node_modules/neverthrow"] },
+      to: { pathNot: ["^src/(modules/[^/]+/domain|shared/kernel)/", "node_modules/neverthrow"], dependencyTypesNot: ["core"] },
     },
     {
       name: "kernel-is-pure",
@@ -16,9 +16,23 @@ module.exports = {
     },
     {
       name: "application-depends-on-domain-only",
+      comment: "Only the module factory wires infrastructure",
       severity: "error",
-      from: { path: "^src/modules/([^/]+)/application/" },
-      to: { path: ["/infrastructure/", "/interface/", "^src/app\\.ts$", "^src/main\\.ts$"] },
+      from: { path: "^src/modules/([^/]+)/application/", pathNot: "/factory\\.ts$" },
+      to: { path: ["/infrastructure/", "/interface/", "^src/(app|main|config)\\.ts$"] },
+    },
+    {
+      name: "modules-ignore-entrypoints",
+      severity: "error",
+      from: { path: "^src/modules/" },
+      to: { path: "^src/(routes|middlewares|consumers|jobs)/" },
+    },
+    {
+      name: "entrypoints-skip-infrastructure",
+      comment: "Routes and middlewares reach modules through their factory",
+      severity: "error",
+      from: { path: "^src/(routes|middlewares|consumers|jobs)/" },
+      to: { path: "^src/modules/[^/]+/infrastructure/" },
     },
     {
       name: "interface-skips-infrastructure",
@@ -28,10 +42,19 @@ module.exports = {
     },
     {
       name: "modules-use-public-api",
-      comment: "Import other modules only through their index.ts",
+      comment: "Reach another module only through its domain, its factory or its index.ts",
       severity: "error",
       from: { path: "^src/modules/([^/]+)/" },
-      to: { path: "^src/modules/([^/]+)/", pathNot: ["^src/modules/$1/", "^src/modules/[^/]+/index\\.ts$"] },
+      to: {
+        path: "^src/modules/([^/]+)/",
+        pathNot: [
+          "^src/modules/$1/",
+          "^src/modules/shared/",
+          "^src/modules/[^/]+/domain/",
+          "^src/modules/[^/]+/application/factory\\.ts$",
+          "^src/modules/[^/]+/index\\.ts$",
+        ],
+      },
     },
     {
       name: "shared-ignores-modules",

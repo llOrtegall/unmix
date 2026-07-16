@@ -1,13 +1,13 @@
 import { eq, inArray } from "drizzle-orm";
-import type { DrizzleTransactions } from "../../../shared/infrastructure/db.ts";
+import type { DrizzleTransactionRepository } from "../../shared/infrastructure/DrizzleTransactionRepository.ts";
 import type { JobRepository } from "../application/ports/index.ts";
 import { type JobStatus, SeparationJob, type Stage } from "../domain/separation-job.ts";
 import { separationJobs } from "./schema.ts";
 
 export class DrizzleJobRepository implements JobRepository {
-  #tx: DrizzleTransactions;
+  #tx: DrizzleTransactionRepository;
 
-  constructor(tx: DrizzleTransactions) {
+  constructor(tx: DrizzleTransactionRepository) {
     this.#tx = tx;
   }
 

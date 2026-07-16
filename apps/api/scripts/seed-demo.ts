@@ -8,15 +8,15 @@ import { parseArgs } from "node:util";
 import { CopyObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { CreateUploadResponse, JobResponse } from "@unmix/contracts";
 import pg from "pg";
-import { AddDemoTrack } from "../src/modules/library/application/use-cases/add-demo-track.ts";
-import type { DemoSong } from "../src/modules/library/domain/track.ts";
-import type { StemName } from "../src/modules/library/domain/stem.ts";
-import { DrizzleTrackRepository } from "../src/modules/library/infrastructure/drizzle-track-repository.ts";
-import { DEMO_MANIFEST_KEY, S3DemoLibrary } from "../src/modules/library/infrastructure/s3-demo-library.ts";
-import { S3Storage } from "../src/modules/library/infrastructure/s3-storage.ts";
 import { config } from "../src/config.ts";
-import { createDatabase, DrizzleTransactions } from "../src/shared/infrastructure/db.ts";
-import { systemClock, uuidGenerator } from "../src/shared/infrastructure/system.ts";
+import { libraryModule } from "../src/modules/library/application/factory.ts";
+import { DemoSong } from "../src/modules/library/domain/DemoSong.ts";
+import { TrackId } from "../src/modules/library/domain/TrackId.ts";
+import { DrizzleTrackRepository } from "../src/modules/library/infrastructure/DrizzleTrackRepository.ts";
+import { DEMO_MANIFEST_KEY } from "../src/modules/library/infrastructure/S3DemoSongRepository.ts";
+import { S3StorageRepository } from "../src/modules/library/infrastructure/S3StorageRepository.ts";
+import { createDatabase } from "../src/modules/shared/infrastructure/database.ts";
+import { DrizzleTransactionRepository } from "../src/modules/shared/infrastructure/DrizzleTransactionRepository.ts";
 import { signInAs } from "./test-session.ts";
 
 const { values, positionals } = parseArgs({
@@ -28,9 +28,10 @@ if (!file || !values.title || !values.credit) throw new Error("usage: seed-demo.
 
 const API = process.env.E2E_API_URL ?? `http://localhost:${config.port}/api/v1`;
 const TYPES: Record<string, string> = { ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac" };
-const storage = new S3Storage(config.s3);
+const storage = new S3StorageRepository(config.s3);
 const { db, pool } = createDatabase(config.databaseUrl);
-const tracks = new DrizzleTrackRepository(new DrizzleTransactions(db));
+const transactions = new DrizzleTransactionRepository(db);
+const tracks = new DrizzleTrackRepository(transactions);
 
 if (values.force || !(await storage.exists(DEMO_MANIFEST_KEY))) {
   await separateDemo(file, values.title, values.credit);
@@ -42,11 +43,11 @@ if (values.force || !(await storage.exists(DEMO_MANIFEST_KEY))) {
 }
 
 // Backfill: users created before the demo existed (or whose copy was just replaced).
-const addDemo = new AddDemoTrack({ tracks, demo: new S3DemoLibrary(storage), ids: uuidGenerator, clock: systemClock });
+const library = libraryModule(transactions, config.s3, config.maxUploadBytes);
 const { rows: missing } = await pool.query<{ id: string }>(
   `select id from users u where not exists (select 1 from tracks t where t.user_id = u.id and t.input_key like 'demo/%')`,
 );
-for (const { id } of missing) await addDemo.execute(id);
+for (const { id } of missing) await library.addDemoTrack(id);
 console.log(`demo added to ${missing.length} existing user(s)`);
 await pool.end();
 
@@ -83,9 +84,9 @@ async function separateDemo(path: string, title: string, credit: string) {
   }
 
   // Copy the files out of the throwaway track, keeping their names.
-  const track = await tracks.findById(upload.trackId);
+  const track = await tracks.findById(TrackId.fromPrimitive(upload.trackId));
   if (!track) throw new Error("seed track vanished");
-  const t = track.toSnapshot();
+  const t = track.toPrimitive();
   const from = `tracks/${t.id}/`;
   const toDemo = (key: string) => `demo/${key.slice(from.length)}`;
   const s3 = new S3Client({
@@ -99,16 +100,16 @@ async function separateDemo(path: string, title: string, credit: string) {
     await s3.send(new CopyObjectCommand({ Bucket: config.s3.bucket, CopySource: `${config.s3.bucket}/${key}`, Key: toDemo(key) }));
   }
 
-  const demo: DemoSong = {
+  const demo = DemoSong.fromPrimitive({
     title,
     originalFilename: t.originalFilename,
-    contentType: t.mediaType.value,
+    contentType: t.mediaType,
     sizeBytes: t.sizeBytes,
     inputKey: toDemo(t.inputKey),
     durationSeconds: t.durationSeconds!,
     credit,
     stems: t.stems.map((s) => ({
-      name: s.name as StemName,
+      name: s.name,
       key: toDemo(s.key),
       sizeBytes: s.sizeBytes,
       silent: s.silent,
@@ -116,11 +117,11 @@ async function separateDemo(path: string, title: string, credit: string) {
       peaksKey: toDemo(s.peaksKey),
       midiKey: s.midiKey ? toDemo(s.midiKey) : null,
     })),
-  };
+  }).toPrimitive();
   await s3.send(
     new PutObjectCommand({
       Bucket: config.s3.bucket,
-      Key: DEMO_MANIFEST_KEY,
+      Key: DEMO_MANIFEST_KEY.toPrimitive(),
       Body: JSON.stringify(demo, null, 2),
       ContentType: "application/json",
     }),
