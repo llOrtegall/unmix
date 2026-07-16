@@ -1,10 +1,25 @@
 # 03 — API contract
 
-Base: `/api/v1`. JSON. Schemas in `packages/contracts/src/http/api.ts` (zod). Errors look like `{ "error": { "code": string, "message": string } }`.
+Base: `/api/v1`. JSON. Schemas in `packages/contracts/src/http/api.ts` (zod).
+
+## Errors
+
+Every error answers `{ "code": string, "message": string }` ([ADR 0028](adr/0028-clean-architecture-skills.md)). The `code` is stable and namespaced (`track.not_found`); the `message` is for logs, not for users. The status comes from the error's category:
+
+| Status | When | Example codes |
+|--------|------|---------------|
+| 400 | The request does not match its schema | `request.invalid` |
+| 401 | No session | `session.required` |
+| 404 | Not found, or owned by someone else | `track.not_found`, `route.not_found` |
+| 409 | Conflict with the current state | `track.busy`, `track.upload_missing`, `track.stems_not_ready` |
+| 422 | A business rule rejects the input | `track.unsupported_media_type`, `track.file_too_large` |
+| 500 | Unexpected failure | `internal` |
+
+Separation jobs still answer `JOB_NOT_FOUND` (404) and `INVALID_TRANSITION` (409) until that module is migrated.
 
 ## Authentication
 
-Every `/api/v1` route requires the Better Auth session cookie. Without it, routes answer `401 UNAUTHORIZED` ([ADR 0025](adr/0025-sessions-and-ownership.md)). Each user only sees their own tracks and jobs. Someone else's answer `404`, the same as ones that do not exist.
+Every `/api/v1` route requires the Better Auth session cookie. Without it, routes answer `401 session.required` ([ADR 0025](adr/0025-sessions-and-ownership.md)). Each user only sees their own tracks and jobs. Someone else's answer `404`, the same as ones that do not exist.
 
 Better Auth serves `/api/auth/*`. The web uses `POST /api/auth/sign-in/social` (`{ "provider": "google", "callbackURL": "/" }`), `GET /api/auth/get-session` and `POST /api/auth/sign-out`.
 
@@ -20,12 +35,12 @@ Creates a track and returns a presigned URL to upload the file straight to S3 st
 { "trackId": "uuid", "uploadUrl": "https://...", "expiresIn": 900 }
 ```
 
-Validation: allowed type, `sizeBytes <= MAX_UPLOAD_MB`.
+Validation: allowed type (`422 track.unsupported_media_type`), `sizeBytes <= MAX_UPLOAD_MB` (`422 track.file_too_large`).
 
 ## Jobs
 
 ### `POST /tracks/:trackId/jobs`
-Checks that the file is in storage and enqueues the separation. `409 UPLOAD_MISSING` if it has not been uploaded yet; `409 TRACK_BUSY` if it is already being separated.
+Checks that the file is in storage and enqueues the separation. `409 track.upload_missing` if it has not been uploaded yet; `409 track.busy` if it is already being separated.
 
 ```json
 // response 202 (JobResponse)
@@ -68,10 +83,10 @@ Paginated history, newest first (`?cursor=<createdAt ISO>&limit=20`). Response `
 `credit` holds the license attribution of the demo song and is `null` for uploads ([ADR 0026](adr/0026-demo-song-and-cleanup.md)).
 
 ### `GET /tracks/:trackId/download.zip`
-Streaming ZIP with the FLAC stems (not recompressed) and, when present, `midi/<stem>.mid`. `409 INVALID_STATE` if the track is not `completed`.
+Streaming ZIP with the FLAC stems (not recompressed) and, when present, `midi/<stem>.mid`. `409 track.stems_not_ready` if the track is not `completed`.
 
 ### `DELETE /tracks/:trackId`
-Deletes the track, its stems and its files. `409 TRACK_BUSY` while it is being separated.
+Deletes the track, its stems and its files. `409 track.busy` while it is being separated.
 
 ## Health
 
