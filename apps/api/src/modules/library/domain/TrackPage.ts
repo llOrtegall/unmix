@@ -1,4 +1,4 @@
-import { CreatedAt, type CreatedAtPrimitive } from "./CreatedAt.ts";
+import { CreatedAt, type CreatedAtPrimitive } from "../../shared/domain/CreatedAt.ts";
 import { TrackList, type TrackListPrimitive } from "./TrackList.ts";
 
 export interface TrackPagePrimitive {

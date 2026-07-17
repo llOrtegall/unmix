@@ -1,7 +1,7 @@
 import { JobId, type JobIdPrimitive } from "../../shared/domain/JobId.ts";
 import { ObjectKey, type ObjectKeyPrimitive } from "../../shared/domain/ObjectKey.ts";
 import { UserId, type UserIdPrimitive } from "../../shared/domain/UserId.ts";
-import { CreatedAt, type CreatedAtPrimitive } from "./CreatedAt.ts";
+import { CreatedAt, type CreatedAtPrimitive } from "../../shared/domain/CreatedAt.ts";
 import { Credit, type CreditPrimitive } from "./Credit.ts";
 import type { DemoSong } from "./DemoSong.ts";
 import { FileTooLargeError } from "./errors/FileTooLargeError.ts";

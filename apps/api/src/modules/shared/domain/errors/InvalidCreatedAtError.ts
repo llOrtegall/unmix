@@ -1,7 +1,7 @@
-import { ValidationError } from "../../../shared/domain/DomainError.ts";
+import { ValidationError } from "../DomainError.ts";
 
 export class InvalidCreatedAtError extends ValidationError {
-  readonly code = "track.invalid_created_at";
+  readonly code = "date.invalid_created_at";
 
   constructor(value: string) {
     super(`"${value}" is not a valid date`);

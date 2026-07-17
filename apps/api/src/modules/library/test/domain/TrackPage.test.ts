@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreatedAt } from "../../domain/CreatedAt.ts";
+import { CreatedAt } from "../../../shared/domain/CreatedAt.ts";
 import { TrackList } from "../../domain/TrackList.ts";
 import { TrackPage } from "../../domain/TrackPage.ts";
 import * as TrackMother from "../helpers/TrackMother.ts";

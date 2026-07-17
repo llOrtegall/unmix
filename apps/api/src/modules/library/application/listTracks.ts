@@ -1,5 +1,5 @@
 import { UserId } from "../../shared/domain/UserId.ts";
-import { CreatedAt } from "../domain/CreatedAt.ts";
+import { CreatedAt } from "../../shared/domain/CreatedAt.ts";
 import { PageSize } from "../domain/PageSize.ts";
 import type { TrackPage } from "../domain/TrackPage.ts";
 import type { TrackRepository } from "../domain/TrackRepository.ts";

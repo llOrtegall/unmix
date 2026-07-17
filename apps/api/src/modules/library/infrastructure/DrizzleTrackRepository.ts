@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import type { UserId } from "../../shared/domain/UserId.ts";
 import type { DrizzleTransactionRepository } from "../../shared/infrastructure/DrizzleTransactionRepository.ts";
-import { CreatedAt } from "../domain/CreatedAt.ts";
+import { CreatedAt } from "../../shared/domain/CreatedAt.ts";
 import type { MediaTypePrimitive } from "../domain/MediaType.ts";
 import type { PageSize } from "../domain/PageSize.ts";
 import type { StemPrimitive } from "../domain/Stem.ts";
