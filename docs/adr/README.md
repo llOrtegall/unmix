@@ -32,3 +32,4 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0026](0026-demo-song-and-cleanup.md) | Per-user demo song, garbage cleanup and browser e2e |
 | [0027](0027-midi-transcription.md) | MIDI transcription with Basic Pitch (ONNX) |
 | [0028](0028-clean-architecture-skills.md) | Adopt the clean-architecture skills |
+| [0029](0029-separation-jobs-and-outbox-modules.md) | Separation jobs and the outbox as clean-architecture modules |

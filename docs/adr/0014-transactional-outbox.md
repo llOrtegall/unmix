@@ -1,6 +1,6 @@
 # 0014 — Transactional outbox
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [0029](0029-separation-jobs-and-outbox-modules.md)
 - **Date:** 2026-10-27
 
 ## Context
