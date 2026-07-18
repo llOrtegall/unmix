@@ -1,19 +1,10 @@
 import { asc, isNull, sql } from "drizzle-orm";
-import { integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { FastifyBaseLogger } from "fastify";
 import type { DomainEvent } from "../../../shared/kernel/domain-event.ts";
 import type { EventHandler, EventPublisher } from "../../../shared/kernel/ports.ts";
 import type { DrizzleTransactionRepository } from "./DrizzleTransactionRepository.ts";
+import { outbox } from "./outboxSchema.ts";
 
-export const outbox = pgTable("outbox", {
-  id: uuid("id").primaryKey(),
-  eventType: text("event_type").notNull(),
-  payload: jsonb("payload").notNull(),
-  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  attempts: integer("attempts").notNull().default(0),
-  lastError: text("last_error"),
-});
 
 /** Writes events to the outbox and runs in-process handlers in the same transaction. */
 export class OutboxEventPublisher implements EventPublisher {
