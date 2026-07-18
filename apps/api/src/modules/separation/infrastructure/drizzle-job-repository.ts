@@ -2,7 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { DrizzleTransactionRepository } from "../../shared/infrastructure/DrizzleTransactionRepository.ts";
 import type { JobRepository } from "../application/ports/index.ts";
 import { type JobStatus, SeparationJob, type Stage } from "../domain/separation-job.ts";
-import { separationJobs } from "./schema.ts";
+import { separationJobs } from "./jobSchema.ts";
 
 export class DrizzleJobRepository implements JobRepository {
   #tx: DrizzleTransactionRepository;
