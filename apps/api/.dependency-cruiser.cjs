@@ -5,21 +5,15 @@ module.exports = {
     {
       name: "domain-is-pure",
       severity: "error",
-      from: { path: "^src/(modules/[^/]+|shared)/domain/" },
-      to: { pathNot: ["^src/(modules/[^/]+/domain|shared/kernel)/", "node_modules/neverthrow"], dependencyTypesNot: ["core"] },
-    },
-    {
-      name: "kernel-is-pure",
-      severity: "error",
-      from: { path: "^src/shared/kernel/" },
-      to: { pathNot: ["^src/shared/kernel/", "node_modules/neverthrow"] },
+      from: { path: "^src/modules/[^/]+/domain/" },
+      to: { pathNot: "^src/modules/[^/]+/domain/", dependencyTypesNot: ["core"] },
     },
     {
       name: "application-depends-on-domain-only",
       comment: "Only the module factory wires infrastructure",
       severity: "error",
       from: { path: "^src/modules/([^/]+)/application/", pathNot: "/factory\\.ts$" },
-      to: { path: ["/infrastructure/", "/interface/", "^src/(app|main|config)\\.ts$"] },
+      to: { path: ["/infrastructure/", "^src/(app|main|config)\\.ts$"] },
     },
     {
       name: "modules-ignore-entrypoints",
@@ -29,22 +23,16 @@ module.exports = {
     },
     {
       name: "entrypoints-skip-infrastructure",
-      comment: "Routes and middlewares reach modules through their factory",
+      comment: "Entrypoints reach modules through their factory",
       severity: "error",
       from: { path: "^src/(routes|middlewares|consumers|jobs)/" },
       to: { path: "^src/modules/[^/]+/infrastructure/" },
     },
     {
-      name: "interface-skips-infrastructure",
-      severity: "error",
-      from: { path: "^src/modules/[^/]+/interface/" },
-      to: { path: "/infrastructure/" },
-    },
-    {
       name: "modules-use-public-api",
-      comment: "Reach another module only through its domain, its factory or its index.ts",
+      comment: "Reach another module only through its domain, its factory or its index.ts; tests may reuse its Mothers",
       severity: "error",
-      from: { path: "^src/modules/([^/]+)/" },
+      from: { path: "^src/modules/([^/]+)/", pathNot: "^src/modules/[^/]+/test/" },
       to: {
         path: "^src/modules/([^/]+)/",
         pathNot: [
@@ -57,10 +45,10 @@ module.exports = {
       },
     },
     {
-      name: "shared-ignores-modules",
+      name: "production-ignores-tests",
       severity: "error",
-      from: { path: "^src/shared/" },
-      to: { path: "^src/modules/" },
+      from: { pathNot: ["/test/", "\\.test\\.ts$"] },
+      to: { path: "^src/modules/[^/]+/test/" },
     },
     { name: "no-circular", severity: "error", from: {}, to: { circular: true } },
   ],

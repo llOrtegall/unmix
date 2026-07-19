@@ -40,9 +40,6 @@ importers:
       ioredis:
         specifier: 6.0.0
         version: 6.0.0
-      neverthrow:
-        specifier: 8.2.0
-        version: 8.2.0
       pg:
         specifier: 8.23.1
         version: 8.23.1
