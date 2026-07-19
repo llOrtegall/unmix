@@ -5,12 +5,13 @@ import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.ts";
 import { requireUser } from "./middlewares/requireUser.ts";
 import { identityRoutes } from "./modules/identity/routes.ts";
 import type { LibraryModule } from "./modules/library/application/factory.ts";
-import { type SeparationUseCases, separationRoutes } from "./modules/separation/interface/routes.ts";
+import type { SeparationModule } from "./modules/separation/application/factory.ts";
 import { libraryRoutes } from "./routes/libraryRoutes.ts";
+import { separationRoutes } from "./routes/separationRoutes.ts";
 
 export interface AppDeps {
   library: LibraryModule;
-  separation: SeparationUseCases;
+  separation: SeparationModule;
   identity: Identity;
   health: () => Promise<Record<string, "ok" | "error">>;
   webOrigin: string;
@@ -36,7 +37,7 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
     async (api) => {
       api.addHook("preHandler", requireUser(deps.identity));
       await api.register(libraryRoutes(deps.library));
-      separationRoutes(api, deps.separation);
+      await api.register(separationRoutes(deps.separation));
     },
     { prefix: "/api/v1" },
   );

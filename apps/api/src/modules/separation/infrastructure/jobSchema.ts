@@ -1,4 +1,5 @@
 import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import type { JobFailurePrimitive } from "../domain/JobFailure.ts";
 
 export const separationJobs = pgTable(
   "separation_jobs",
@@ -9,7 +10,7 @@ export const separationJobs = pgTable(
     status: text("status").notNull(),
     stage: text("stage"),
     progress: integer("progress").notNull().default(0),
-    failure: jsonb("failure").$type<{ code: string; message: string }>(),
+    failure: jsonb("failure").$type<JobFailurePrimitive>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },

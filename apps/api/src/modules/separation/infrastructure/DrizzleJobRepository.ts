@@ -1,7 +1,6 @@
 import { asc, eq, inArray } from "drizzle-orm";
 import type { JobId } from "../../shared/domain/JobId.ts";
 import type { DrizzleTransactionRepository } from "../../shared/infrastructure/DrizzleTransactionRepository.ts";
-import type { JobFailurePrimitive } from "../domain/JobFailure.ts";
 import type { JobRepository } from "../domain/JobRepository.ts";
 import type { JobStatusPrimitive } from "../domain/JobStatus.ts";
 import type { ModelNamePrimitive } from "../domain/ModelName.ts";
@@ -67,7 +66,7 @@ export class DrizzleJobRepository implements JobRepository {
       status: row.status as JobStatusPrimitive,
       stage: row.stage as StagePrimitive | null,
       progress: row.progress,
-      failure: row.failure as JobFailurePrimitive | null,
+      failure: row.failure,
       createdAt: row.createdAt.toISOString(),
       finishedAt: row.finishedAt?.toISOString() ?? null,
     });
