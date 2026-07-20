@@ -10,12 +10,10 @@ Every error answers `{ "code": string, "message": string }` ([ADR 0028](adr/0028
 |--------|------|---------------|
 | 400 | The request does not match its schema | `request.invalid` |
 | 401 | No session | `session.required` |
-| 404 | Not found, or owned by someone else | `track.not_found`, `route.not_found` |
+| 404 | Not found, or owned by someone else | `track.not_found`, `job.not_found`, `route.not_found` |
 | 409 | Conflict with the current state | `track.busy`, `track.upload_missing`, `track.stems_not_ready` |
 | 422 | A business rule rejects the input | `track.unsupported_media_type`, `track.file_too_large` |
 | 500 | Unexpected failure | `internal` |
-
-Separation jobs still answer `JOB_NOT_FOUND` (404) and `INVALID_TRANSITION` (409) until that module is migrated.
 
 ## Authentication
 
@@ -51,6 +49,7 @@ Checks that the file is in storage and enqueues the separation. `409 track.uploa
 ```json
 { "jobId": "uuid", "trackId": "uuid", "status": "queued|processing|completed|failed", "stage": "separating", "progress": 42, "error": null }
 ```
+`404 job.not_found` if the job does not exist or belongs to someone else's track. The SSE endpoint below answers the same before it opens the stream.
 
 ### `GET /jobs/:jobId/events` (SSE)
 Events: `snapshot` (current state on connect), `progress`, `completed`, `failed`. The `data` of each one is a `JobResponse`. A `: ping` comment every 15 s. The connection closes when the job ends.
@@ -123,3 +122,5 @@ Failure (`job.failedReason`, `SeparationFailureV1` as JSON):
 ```
 
 Codes: `INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED` (not retryable); `SEPARATION_ERROR`, `STORAGE_ERROR` (retryable).
+
+The API applies outcomes from the queue's own state ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)): on a `completed` or `failed` queue event, and for every unfinished job on startup, it reads the job from BullMQ. A failed attempt with retries left changes nothing. A result that breaks `SeparationCompletedV1`, or a `failedReason` that is not a `SeparationFailureV1`, fails the job with `SEPARATION_ERROR`.
