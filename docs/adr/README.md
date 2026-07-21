@@ -33,3 +33,4 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0027](0027-midi-transcription.md) | MIDI transcription with Basic Pitch (ONNX) |
 | [0028](0028-clean-architecture-skills.md) | Adopt the clean-architecture skills |
 | [0029](0029-separation-jobs-and-outbox-modules.md) | Separation jobs and the outbox as clean-architecture modules |
+| [0030](0030-identity-health-and-bootstrap.md) | Identity and health modules, server bootstrap and final dependency rules |

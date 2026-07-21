@@ -1,6 +1,6 @@
 # 0009 — Auth: Better Auth + Google (phase 5)
 
-- **Status:** Accepted. Implementation details in [0025](0025-sessions-and-ownership.md)
+- **Status:** Accepted. Implementation details in [0025](0025-sessions-and-ownership.md), amended by [0030](0030-identity-health-and-bootstrap.md)
 - **Date:** 2026-10-27
 
 ## Context
