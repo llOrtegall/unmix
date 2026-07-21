@@ -1,4 +1,3 @@
-// Bootstrap: builds the shared resources and the modules, then starts the entrypoints.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SEPARATION_QUEUE } from "@unmix/contracts";
