@@ -4,31 +4,35 @@ Node.js 24 + TypeScript 7 API: Fastify, Drizzle (Postgres), BullMQ (Redis), S3 p
 
 Node runs the `.ts` sources directly (type stripping), so there is no build step. `tsc` only typechecks ([ADR 0022](../../docs/adr/0022-typescript-without-build.md)).
 
-The migration is in progress ([roadmap](../../docs/02-roadmap.md#refactor-to-the-clean-architecture-skills)): `shared` and `library` follow the new layout, while `separation` and `identity` still use the previous one.
+The migration is in progress ([roadmap](../../docs/02-roadmap.md#refactor-to-the-clean-architecture-skills)): `shared`, `library`, `separation` and `outbox` follow the new layout, while `identity` and the `main.ts` bootstrap still use the previous one.
 
 ```
 src/
   config.ts               zod-validated environment (the only reader of process.env)
   app.ts                  Fastify app (routes, CORS, error handler, /health)
-  main.ts                 wiring, migrations, background processes
+  main.ts                 shared resources, module factories, consumers and jobs
   middlewares/            errorHandler (DomainError category -> HTTP, { code, message }), requireUser
-  routes/                 Fastify plugins that receive a module and call one use case per route
-  modules/shared/         DomainError categories, UserId, JobId, ObjectKey, TransactionRepository;
-                          Drizzle database, AsyncLocalStorage transactions, outbox
+  routes/                 Fastify plugins that receive a module and call one use case per route (SSE included)
+  consumers/              BullMQ queue events -> separation use cases; separation events -> library use cases
+  jobs/                   outbox relay, garbage collection, startup reconciliation
+  modules/shared/         DomainError categories, UserId, JobId, ObjectKey, CreatedAt, DomainEvent(List),
+                          EventRepository, TransactionRepository; Drizzle database, AsyncLocalStorage
+                          transactions, OutboxEventRepository
   modules/library/        domain/ (Track and its value objects, repositories), application/ (use cases,
                           factory.ts), infrastructure/ (Drizzle, S3, demo manifest, ZIP), test/
-  modules/separation/     SeparationJob aggregate: request, lifecycle, SSE, queue adapters, reconciliation
+  modules/separation/     domain/ (SeparationJob, QueueJobState, events), application/ (use cases, factory.ts),
+                          infrastructure/ (Drizzle, BullMQ, in-memory SSE fan-out, library catalog), test/
+  modules/outbox/         OutboxEvent and the relay use case; Drizzle and BullMQ repositories
   modules/identity/       Better Auth (Google), /api/auth routes
-  shared/kernel/          Result, DomainEvent/AggregateRoot and ports, still used by separation
 ```
 
-Tests sit next to the code: `modules/<module>/test/{domain,application,helpers}` with Object Mothers and RepositoryMothers, and `routes/*.test.ts` / `middlewares/*.test.ts` with Fastify `inject`. `pnpm test:coverage` reports coverage.
+Tests sit next to the code: `modules/<module>/test/{domain,application,infrastructure,helpers}` with Object Mothers and RepositoryMothers, and `routes/`, `middlewares/`, `consumers/` and `jobs/` tests beside each file (routes through Fastify `inject`). Repository tests start Postgres and Redis with Testcontainers, so `pnpm check` needs Docker. `pnpm test:coverage` reports coverage.
 
 ## Commands
 
 ```bash
 pnpm dev                 # run with --watch against ../../.env
-pnpm check               # typecheck + dependency rules + unit tests
+pnpm check               # typecheck + dependency rules + tests (Docker for Testcontainers)
 pnpm db:generate         # new migration after editing a schema.ts (applied on startup)
 pnpm e2e -- /path/to/song.mp3   # full flow against a running stack, as two test users
 pnpm demo:seed           # separate the demo song once and give it to every user
@@ -50,8 +54,8 @@ New users get a ready-to-play copy of the demo song: a `Track` row that points a
 
 1. `POST /api/v1/uploads` creates a `Track` (`awaiting_upload`) owned by the signed-in user and returns a presigned PUT URL.
 2. The browser uploads straight to S3.
-3. `POST /api/v1/tracks/:id/jobs` checks the upload exists, creates a `SeparationJob` and, in one transaction, writes `separation.requested` to the outbox. The library module's in-process handler moves the track to `separating`.
-4. The outbox relay publishes `separation.requested.v1` to BullMQ (job id = separation job id, so re-publishing is harmless).
-5. The worker's progress/completed/failed events arrive through `QueueEvents`. `JobLifecycle` applies them idempotently, and `separation.completed` attaches the stems to the track.
+3. `POST /api/v1/tracks/:id/jobs` checks the upload exists, creates a `SeparationJob` and, in one transaction, writes `separation.requested` to the outbox. `libraryEventConsumer` runs the library's `startTrackSeparation` in that transaction, which moves the track to `separating`.
+4. `outboxRelayJob` runs `relayPendingEvents`, which publishes `separation.requested.v1` to BullMQ (job id = separation job id, so re-publishing is harmless).
+5. The worker's events arrive through `QueueEvents` (`separationQueueConsumer`). `progress` runs `recordJobProgress`; `completed` and `failed` run `syncJob`, which reads the job's final state from the queue, since a failed attempt may still be retried. Each transition locks the job row, and `separation.completed` attaches the stems to the track ([ADR 0029](../../docs/adr/0029-separation-jobs-and-outbox-modules.md)).
 6. `GET /api/v1/jobs/:id/events` streams `snapshot`, `progress`, `completed` and `failed` over SSE.
-7. On startup, `ReconcileJobs` checks unfinished jobs against the queue to catch up on events missed while the API was down.
+7. On startup, `reconcileJobs` runs `syncJob` for every unfinished job to catch up on events missed while the API was down.
