@@ -2,7 +2,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SEPARATION_QUEUE } from "@unmix/contracts";
 import { Queue, QueueEvents } from "bullmq";
-import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
 import { buildApp } from "./app.ts";
 import { config } from "./config.ts";
@@ -13,7 +12,7 @@ import { outboxRelayJob } from "./jobs/outboxRelayJob.ts";
 import { reconcileJobsJob } from "./jobs/reconcileJobsJob.ts";
 import { createIdentity } from "./modules/identity/auth.ts";
 import { libraryModule } from "./modules/library/application/factory.ts";
-import { S3StorageRepository } from "./modules/library/infrastructure/S3StorageRepository.ts";
+import { healthModule } from "./modules/health/application/factory.ts";
 import { outboxModule } from "./modules/outbox/application/factory.ts";
 import { separationModule } from "./modules/separation/application/factory.ts";
 import { createDatabase, runMigrations } from "./modules/shared/infrastructure/database.ts";
@@ -29,12 +28,12 @@ const { db, pool } = createDatabase(config.databaseUrl);
 await runMigrations(db, join(root, "drizzle"));
 const transactions = new DrizzleTransactionRepository(db);
 const eventRepository = new OutboxEventRepository(transactions);
-const storage = new S3StorageRepository(config.s3);
 const queue = new Queue(SEPARATION_QUEUE, { connection: connectRedis() });
 
 const library = libraryModule(transactions, config.s3, config.maxUploadBytes);
 const separation = separationModule({ transactions, eventRepository, queue, library, model: config.demucsModel });
 const outbox = outboxModule(transactions, queue);
+const health = healthModule(db, queue, config.s3);
 
 // New users start with the demo song. Hooks only run during requests, so `app` is initialized by then.
 const identity = createIdentity(db, config.auth, {
@@ -51,12 +50,8 @@ const app = buildApp(
     separation,
     webOrigin: config.webOrigin,
     health: async () => {
-      const check = async (fn: () => Promise<unknown>) => fn().then(() => "ok" as const, () => "error" as const);
-      return {
-        database: await check(() => db.execute(sql`select 1`)),
-        redis: await check(() => queue.getJobCounts()),
-        storage: await check(() => storage.ping()),
-      };
+      const { database, queue: redis, storage } = (await health.checkHealth()).toPrimitive();
+      return { database, redis, storage };
     },
   },
   {
