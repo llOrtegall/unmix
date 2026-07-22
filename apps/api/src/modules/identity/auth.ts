@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import type { Database } from "../shared/infrastructure/database.ts";
 import type { Identity } from "./index.ts";
-import { accounts, sessions, users, verifications } from "./schema.ts";
+import { accounts, sessions, users, verifications } from "./infrastructure/identitySchema.ts";
 
 export interface AuthConfig {
   secret: string;

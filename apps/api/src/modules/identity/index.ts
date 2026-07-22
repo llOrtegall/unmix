@@ -7,4 +7,4 @@ export interface Identity {
 }
 
 /** Other modules reference users only through foreign keys. */
-export { users } from "./schema.ts";
+export { users } from "./infrastructure/identitySchema.ts";
