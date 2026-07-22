@@ -4,10 +4,11 @@ import {
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
-  S3Client,
+  type S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ObjectKey } from "../../shared/domain/ObjectKey.ts";
+import { createS3Client, type S3Settings } from "../../shared/infrastructure/s3Client.ts";
 import type { MediaType } from "../domain/MediaType.ts";
 import { SignedUrl } from "../domain/SignedUrl.ts";
 import type { StorageRepository } from "../domain/StorageRepository.ts";
@@ -18,31 +19,14 @@ import type { UrlLifetime } from "../domain/UrlLifetime.ts";
 const NOT_FOUND = 404;
 const FOLDER_DELIMITER = "/";
 
-export interface S3Settings {
-  readonly endpoint: string;
-  readonly publicEndpoint: string;
-  readonly region: string;
-  readonly accessKey: string;
-  readonly secretKey: string;
-  readonly bucket: string;
-}
-
 export class S3StorageRepository implements StorageRepository {
   private readonly client: S3Client;
   private readonly signer: S3Client;
   private readonly bucket: string;
 
   constructor(settings: S3Settings) {
-    const base = {
-      region: settings.region,
-      forcePathStyle: true,
-      // Default CRC32 checksums end up in presigned URLs, which browsers cannot satisfy.
-      requestChecksumCalculation: "WHEN_REQUIRED" as const,
-      responseChecksumValidation: "WHEN_REQUIRED" as const,
-      credentials: { accessKeyId: settings.accessKey, secretAccessKey: settings.secretKey },
-    };
-    this.client = new S3Client({ ...base, endpoint: settings.endpoint });
-    this.signer = new S3Client({ ...base, endpoint: settings.publicEndpoint });
+    this.client = createS3Client(settings);
+    this.signer = createS3Client(settings, settings.publicEndpoint);
     this.bucket = settings.bucket;
   }
 
@@ -105,9 +89,5 @@ export class S3StorageRepository implements StorageRepository {
       token = page.NextContinuationToken;
     } while (token);
     return TrackFolderList.fromKeys(keys);
-  }
-
-  async ping(): Promise<void> {
-    await this.client.send(new ListObjectsV2Command({ Bucket: this.bucket, MaxKeys: 1 }));
   }
 }

@@ -1,9 +1,10 @@
 import type { DrizzleTransactionRepository } from "../../shared/infrastructure/DrizzleTransactionRepository.ts";
+import type { S3Settings } from "../../shared/infrastructure/s3Client.ts";
 import { FileSize } from "../domain/FileSize.ts";
 import { ArchiverStemArchiveRepository } from "../infrastructure/ArchiverStemArchiveRepository.ts";
 import { DrizzleTrackRepository } from "../infrastructure/DrizzleTrackRepository.ts";
 import { S3DemoSongRepository } from "../infrastructure/S3DemoSongRepository.ts";
-import { type S3Settings, S3StorageRepository } from "../infrastructure/S3StorageRepository.ts";
+import { S3StorageRepository } from "../infrastructure/S3StorageRepository.ts";
 import { addDemoTrack } from "./addDemoTrack.ts";
 import { checkTrackOwnership } from "./checkTrackOwnership.ts";
 import { collectGarbage } from "./collectGarbage.ts";
