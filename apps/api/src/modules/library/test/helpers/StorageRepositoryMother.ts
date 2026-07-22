@@ -1,4 +1,3 @@
-import { Readable } from "node:stream";
 import { faker } from "@faker-js/faker";
 import { type Mocked, vi } from "vitest";
 import type { ObjectKey } from "../../../shared/domain/ObjectKey.ts";
@@ -14,7 +13,7 @@ export const create = (overrides: Partial<StorageRepository> = {}): Mocked<Stora
     signUpload: vi.fn(async (key: ObjectKey) => signedUrlFor(key)),
     signDownload: vi.fn(async (key: ObjectKey) => signedUrlFor(key)),
     exists: vi.fn().mockResolvedValue(true),
-    read: vi.fn(async () => Readable.from([])),
+    read: vi.fn(async () => new Blob([]).stream()),
     deleteFolder: vi.fn().mockResolvedValue(undefined),
     findTrackFolders: vi.fn().mockResolvedValue(TrackFolderList.empty()),
     ...overrides,

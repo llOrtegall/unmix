@@ -1,4 +1,3 @@
-import type { Readable } from "node:stream";
 import { StemArchive } from "../domain/StemArchive.ts";
 import type { StemArchiveRepository } from "../domain/StemArchiveRepository.ts";
 import type { TrackRepository } from "../domain/TrackRepository.ts";
@@ -6,7 +5,7 @@ import { findOwnedTrack } from "./findOwnedTrack.ts";
 
 export interface StemDownload {
   readonly archive: StemArchive;
-  readonly content: Readable;
+  readonly content: ReadableStream<Uint8Array>;
 }
 
 interface Dependencies {

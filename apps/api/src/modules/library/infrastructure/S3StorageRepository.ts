@@ -1,4 +1,3 @@
-import type { Readable } from "node:stream";
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -71,9 +70,9 @@ export class S3StorageRepository implements StorageRepository {
     }
   }
 
-  async read(key: ObjectKey): Promise<Readable> {
+  async read(key: ObjectKey): Promise<ReadableStream<Uint8Array>> {
     const object = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key.toPrimitive() }));
-    return object.Body as Readable;
+    return object.Body!.transformToWebStream() as ReadableStream<Uint8Array>;
   }
 
   async deleteFolder(folder: TrackFolder): Promise<void> {

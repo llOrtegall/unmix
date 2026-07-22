@@ -1,4 +1,3 @@
-import { Readable } from "node:stream";
 import { faker } from "@faker-js/faker";
 import Fastify from "fastify";
 import { describe, expect, it, vi } from "vitest";
@@ -142,7 +141,7 @@ describe("libraryRoutes", () => {
   describe("GET /tracks/:trackId/download.zip", () => {
     it("streams the archive as an attachment named after the track", async () => {
       const archive = StemArchive.forTrack(TrackMother.completed({ title: "La" }));
-      const downloadStems = vi.fn().mockResolvedValue({ archive, content: Readable.from(["zip-bytes"]) });
+      const downloadStems = vi.fn().mockResolvedValue({ archive, content: new Blob(["zip-bytes"]).stream() });
 
       const response = await appWith({ downloadStems }).inject({ method: "GET", url: `/tracks/${faker.string.uuid()}/download.zip` });
 
