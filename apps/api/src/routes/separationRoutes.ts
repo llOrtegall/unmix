@@ -33,7 +33,6 @@ export const separationRoutes =
       return toJobResponse(await separation.findJob(jobId, request.userId));
     });
 
-    // Server-Sent Events (ADR 0010): the current state first, then every change until the job ends.
     app.get("/jobs/:jobId/events", async (request, reply) => {
       const { jobId } = JobParams.parse(request.params);
       const response = reply.raw;
