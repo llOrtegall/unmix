@@ -17,4 +17,4 @@ COPY apps/api/drizzle apps/api/drizzle
 WORKDIR /repo/apps/api
 USER node
 EXPOSE 3000
-CMD ["node", "src/main.ts"]
+CMD ["node", "src/server.ts"]

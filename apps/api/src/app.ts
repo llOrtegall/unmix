@@ -1,45 +1,38 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyServerOptions } from "fastify";
-import type { Identity } from "./modules/identity/index.ts";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.ts";
 import { requireUser } from "./middlewares/requireUser.ts";
-import { identityRoutes } from "./modules/identity/routes.ts";
+import type { HealthModule } from "./modules/health/application/factory.ts";
+import type { IdentityModule } from "./modules/identity/application/factory.ts";
 import type { LibraryModule } from "./modules/library/application/factory.ts";
 import type { SeparationModule } from "./modules/separation/application/factory.ts";
+import { healthRoutes } from "./routes/healthRoutes.ts";
+import { identityRoutes } from "./routes/identityRoutes.ts";
 import { libraryRoutes } from "./routes/libraryRoutes.ts";
 import { separationRoutes } from "./routes/separationRoutes.ts";
 
-export interface AppDeps {
-  library: LibraryModule;
-  separation: SeparationModule;
-  identity: Identity;
-  health: () => Promise<Record<string, "ok" | "error">>;
-  webOrigin: string;
+export interface AppModules {
+  readonly health: HealthModule;
+  readonly identity: IdentityModule;
+  readonly library: LibraryModule;
+  readonly separation: SeparationModule;
 }
 
-/** HTTP surface only; wiring lives in main.ts so tests can pass fakes. */
-export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
+export const buildApp = (modules: AppModules, webOrigin: string, options: FastifyServerOptions = {}) => {
   const app = Fastify(options);
-  app.register(cors, { origin: deps.webOrigin, methods: ["GET", "POST", "DELETE"] });
-
+  app.register(cors, { origin: webOrigin, methods: ["GET", "POST", "DELETE"] });
   app.setErrorHandler(errorHandler);
   app.setNotFoundHandler(notFoundHandler);
 
-  app.get("/health", async (_req, reply) => {
-    const checks = await deps.health();
-    const healthy = Object.values(checks).every((v) => v === "ok");
-    return reply.status(healthy ? 200 : 503).send({ status: healthy ? "ok" : "degraded", checks });
-  });
-
-  identityRoutes(app, deps.identity);
-
+  app.register(healthRoutes(modules.health));
+  app.register(identityRoutes(modules.identity));
   app.register(
     async (api) => {
-      api.addHook("preHandler", requireUser(deps.identity));
-      await api.register(libraryRoutes(deps.library));
-      await api.register(separationRoutes(deps.separation));
+      api.addHook("preHandler", requireUser(modules.identity));
+      await api.register(libraryRoutes(modules.library));
+      await api.register(separationRoutes(modules.separation));
     },
     { prefix: "/api/v1" },
   );
   return app;
-}
+};
