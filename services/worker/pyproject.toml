@@ -18,6 +18,7 @@ dependencies = [
   "onnxruntime>=1.20",
   # resampy (a basic-pitch dependency) still imports pkg_resources.
   "setuptools<81",
+  "pydantic-settings>=2.16.2",
 ]
 
 [dependency-groups]
@@ -29,6 +30,9 @@ dev = [
   "datamodel-code-generator>=0.26",
   "faker>=40.44.0",
   "pytest-cov>=7.1.0",
+  "mypy>=2.4.1",
+  "testcontainers>=4.15.0",
+  "boto3-stubs[s3]>=1.43.121",
 ]
 
 [build-system]
