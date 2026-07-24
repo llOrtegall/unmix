@@ -106,7 +106,7 @@ Every service moves to the shared clean-architecture rules ([ADR 0028](adr/0028-
 - [x] Step 1 — API: `DomainError` categories, zod config, one error handler, `{ code, message }` error body.
 - [x] Step 2 — API: library module (immutable domain, curried use cases, factory, routes as Fastify plugins, `track.*` codes).
 - [x] Step 3 — API: separation module, outbox module, queue consumers and jobs, Testcontainers tests ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)); `Result` and `shared/kernel` removed.
-- [ ] Step 4 — API: identity module, `server.ts` bootstrap, health route, final dependency rules.
+- [x] Step 4 — API: identity and health modules, `server.ts` bootstrap, web streams in the domain, final dependency rules ([ADR 0030](adr/0030-identity-health-and-bootstrap.md)).
 - [ ] Step 5 — Worker.
 - [ ] Step 6 — Web.
 - [ ] Step 7 — Docs and READMEs.
