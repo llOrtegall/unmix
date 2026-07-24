@@ -4,16 +4,18 @@ Node.js 24 + TypeScript 7 API: Fastify, Drizzle (Postgres), BullMQ (Redis), S3 p
 
 Node runs the `.ts` sources directly (type stripping), so there is no build step. `tsc` only typechecks ([ADR 0022](../../docs/adr/0022-typescript-without-build.md)).
 
-The migration is in progress ([roadmap](../../docs/02-roadmap.md#refactor-to-the-clean-architecture-skills)): `shared`, `library`, `separation` and `outbox` follow the new layout, while `identity` and the `main.ts` bootstrap still use the previous one.
+Every module follows that layout ([ADR 0029](../../docs/adr/0029-separation-jobs-and-outbox-modules.md), [ADR 0030](../../docs/adr/0030-identity-health-and-bootstrap.md)). Entrypoints live outside `modules/`, and `server.ts` is the only file outside the modules that builds infrastructure.
 
 ```
 src/
   config.ts               zod-validated environment (the only reader of process.env)
-  app.ts                  Fastify app (routes, CORS, error handler, /health)
-  main.ts                 shared resources, module factories, consumers and jobs
-  middlewares/            errorHandler (DomainError category -> HTTP, { code, message }), requireUser
-  routes/                 Fastify plugins that receive a module and call one use case per route (SSE included)
-  consumers/              BullMQ queue events -> separation use cases; separation events -> library use cases
+  server.ts               bootstrap: shared resources, module factories, app, consumers and jobs
+  app.ts                  Fastify app (CORS, error handler, route plugins)
+  middlewares/            errorHandler (DomainError category -> HTTP, { code, message }), requireUser (401)
+  routes/                 Fastify plugins that receive a module and call one use case per route:
+                          health, identity (/api/auth/*), library, separation (SSE included)
+  consumers/              BullMQ queue events -> separation use cases; UserRegistered and separation
+                          events -> library use cases
   jobs/                   outbox relay, garbage collection, startup reconciliation
   modules/shared/         DomainError categories, UserId, JobId, ObjectKey, CreatedAt, DomainEvent(List),
                           EventRepository, TransactionRepository; Drizzle database, AsyncLocalStorage
@@ -23,7 +25,8 @@ src/
   modules/separation/     domain/ (SeparationJob, QueueJobState, events), application/ (use cases, factory.ts),
                           infrastructure/ (Drizzle, BullMQ, in-memory SSE fan-out, library catalog), test/
   modules/outbox/         OutboxEvent and the relay use case; Drizzle and BullMQ repositories
-  modules/identity/       Better Auth (Google), /api/auth routes
+  modules/identity/       session lookup and /api/auth over Better Auth (Google); UserRegistered on sign-up
+  modules/health/         database, queue and storage pings for /health
 ```
 
 Tests sit next to the code: `modules/<module>/test/{domain,application,infrastructure,helpers}` with Object Mothers and RepositoryMothers, and `routes/`, `middlewares/`, `consumers/` and `jobs/` tests beside each file (routes through Fastify `inject`). Repository tests start Postgres and Redis with Testcontainers, so `pnpm check` needs Docker. `pnpm test:coverage` reports coverage.
@@ -44,7 +47,7 @@ Docker: `docker compose up -d api` (port 3000).
 
 ## Auth
 
-Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sessions-and-ownership.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session. A track that belongs to someone else answers 404, and so do its jobs.
+Better Auth with Google, mounted at `/api/auth` and reached by the browser through the web origin's proxy ([ADR 0025](../../docs/adr/0025-sessions-and-ownership.md)). Needs `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Every `/api/v1` route requires a session (`requireUser` calls the identity module's `findSessionUser`). A track that belongs to someone else answers 404, and so do its jobs. When Better Auth creates a user, the identity module publishes `UserRegistered` and the library gives that user the demo song; a failure there is logged and never blocks the sign-in.
 
 ## Demo song and cleanup
 

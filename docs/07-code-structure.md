@@ -19,17 +19,19 @@ Each process's composition root is the only place that knows every layer ([ADR 0
 
 ## API (`apps/api`) — modular monolith
 
-Being migrated to the clean-architecture skills ([ADR 0028](adr/0028-clean-architecture-skills.md)). `shared`, `library`, `separation` and `outbox` follow the target layout below; `identity` is still a bare Better Auth integration, and `main.ts` still wires everything until it becomes `server.ts` ([roadmap](02-roadmap.md#refactor-to-the-clean-architecture-skills)).
+Follows the clean-architecture skills ([ADR 0028](adr/0028-clean-architecture-skills.md), [0029](adr/0029-separation-jobs-and-outbox-modules.md), [0030](adr/0030-identity-health-and-bootstrap.md)). Every module has `domain/`, `application/` and `infrastructure/`; entrypoints live outside `modules/`, and `server.ts` is the only file outside the modules that builds infrastructure.
 
 ```
 src/
   config.ts                    zod-validated environment, the only reader of process.env
-  app.ts                       Fastify app: CORS, error handler, routes, /health
-  main.ts                      shared resources, module factories, consumers and jobs (becomes server.ts)
-  middlewares/                 errorHandler (one place maps DomainError categories to HTTP), requireUser
-  routes/                      Fastify plugins that receive a module and call one use case per route (SSE included)
+  server.ts                    bootstrap: shared resources (pool, transactions, event repository, queue),
+                               module factories, app, consumers and jobs
+  app.ts                       Fastify app: CORS, error handler, route plugins
+  middlewares/                 errorHandler (one place maps DomainError categories to HTTP), requireUser (401 guard)
+  routes/                      Fastify plugins that receive a module and call one use case per route:
+                               health, identity (/api/auth/* to Better Auth), library, separation (SSE included)
   consumers/                   separationQueueConsumer (BullMQ queue events → separation use cases),
-                               libraryEventConsumer (separation events → library use cases, in-process)
+                               libraryEventConsumer (UserRegistered and separation events → library use cases)
   jobs/                        outboxRelayJob (every 500 ms), collectGarbageJob (hourly), reconcileJobsJob (on startup)
   modules/
     shared/
@@ -37,7 +39,8 @@ src/
                                UserId, JobId, ObjectKey, CreatedAt, DomainEvent, DomainEventList, EventId,
                                OccurredAt, EventRepository, TransactionRepository
       infrastructure/          Drizzle database, DrizzleTransactionRepository (AsyncLocalStorage),
-                               OutboxEventRepository (outbox rows + in-process subscribers), outboxSchema.ts
+                               OutboxEventRepository (outbox rows + in-process subscribers), outboxSchema.ts,
+                               s3Client.ts
       test/                    Mothers, TestDatabase (Testcontainers Postgres with the real migrations)
     library/
       domain/                  Track entity, value objects (TrackTitle, MediaType, FileSize, Stem, ...),
@@ -60,7 +63,16 @@ src/
                                OutboxRepository, EventRouteRepository
       application/             relayPendingEvents (inner: deliverPendingEvents, deliverEvent), factory.ts
       infrastructure/          DrizzleOutboxRepository (FOR UPDATE SKIP LOCKED), BullMqEventRouteRepository
-    identity/                  Better Auth (to become a small module)
+    identity/
+      domain/                  SessionCookies, UserRegistered, SessionRepository
+      application/             findSessionUser, handleAuthRequest, factory.ts (identityModule)
+      infrastructure/          createBetterAuth (its user.create.after hook publishes UserRegistered),
+                               BetterAuthSessionRepository, identitySchema.ts
+      index.ts                 exports only the users table, for foreign keys
+    health/
+      domain/                  ServiceStatus, HealthReport, HealthRepository
+      application/             checkHealth, factory.ts (healthModule)
+      infrastructure/          DrizzleHealthRepository, BullMqHealthRepository, S3HealthRepository
     <module>/test/             domain/, application/, infrastructure/ (Testcontainers), helpers/ (Mothers)
 scripts/                       demo seed, test users
 ```
@@ -72,6 +84,7 @@ Rules of the target layout:
 - Every class that talks to the outside world is a `*Repository`; its interface lives in `domain/`.
 - Entities record domain events; the use case saves the entity and then publishes `entity.getEvents()` through `EventRepository`, inside the same transaction ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)).
 - Entrypoints (`routes/`, `middlewares/`, `consumers/`, `jobs/`) parse input, call one use case and serialize with `toPrimitive()`.
+- Domain and application code import no packages and no `node:` modules; byte streams are `ReadableStream<Uint8Array>`.
 
 ## Worker (`services/worker`) — hexagonal
 
@@ -131,7 +144,7 @@ generated/json-schema/
 
 ## Automatic checks ([ADR 0018](adr/0018-dependency-rules-in-ci.md))
 
-- `dependency-cruiser` (api): `domain` imports only domain code and Node built-ins; `application` imports no infrastructure except `factory.ts`; modules never import entrypoints; entrypoints never import infrastructure; a module reaches another only through its `domain/`, its `application/factory.ts` or its `index.ts`; production code never imports tests, and tests may reuse another module's Mothers.
+- `dependency-cruiser` (api): `domain` imports only domain code (no packages, no `node:` modules); `application` imports only its own folder and domain code, except `factory.ts`; modules never import entrypoints, `app.ts`, `server.ts` or `config.ts`; entrypoints and `app.ts` never import infrastructure; a module reaches another only through its `domain/`, its `application/factory.ts` or `identity/index.ts`; production code never imports tests, and tests may reuse another module's Mothers.
 - `dependency-cruiser` (web): forbids `domain → *`, `application → infrastructure|presentation`, `presentation → infrastructure`.
 - `import-linter` (worker): a `layers` contract with `adapters > application > domain`.
 - CI fails on any violation.
