@@ -1,12 +1,22 @@
 import { InvalidJobFailureError } from "./errors/InvalidJobFailureError.ts";
 
 const CODES = [
-  "INVALID_MESSAGE",
-  "INPUT_NOT_FOUND",
-  "INVALID_MEDIA",
-  "DURATION_EXCEEDED",
-  "SEPARATION_ERROR",
-  "STORAGE_ERROR",
+  "separation.invalid_message",
+  "separation.input_not_found",
+  "separation.invalid_media",
+  "separation.duration_exceeded",
+  "separation.no_stems",
+  "separation.failed",
+  "separation.invalid_job_id",
+  "separation.invalid_track_id",
+  "separation.invalid_object_key",
+  "separation.invalid_model",
+  "separation.invalid_stem_name",
+  "separation.duplicated_stem",
+  "separation.invalid_loudness",
+  "separation.invalid_peaks",
+  "separation.invalid_file_size",
+  "separation.invalid_progress",
 ] as const;
 
 export type JobFailureCodePrimitive = (typeof CODES)[number];
@@ -17,7 +27,7 @@ export interface JobFailurePrimitive {
 }
 
 export class JobFailure {
-  private static readonly UNEXPECTED_CODE: JobFailureCodePrimitive = "SEPARATION_ERROR";
+  private static readonly UNEXPECTED_CODE: JobFailureCodePrimitive = "separation.failed";
   private static readonly UNKNOWN_REASON = "Unknown worker error.";
 
   private readonly code: JobFailureCodePrimitive;

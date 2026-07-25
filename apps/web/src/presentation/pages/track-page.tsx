@@ -91,7 +91,7 @@ export function TrackPage({ id }: { id: string }) {
           ) : track.latestJobId ? (
             <JobProgress jobId={track.latestJobId} trackId={track.id} onDone={reload} />
           ) : (
-            <Card className="p-8 text-center text-sm text-muted-foreground">{t("error.INPUT_NOT_FOUND")}</Card>
+            <Card className="p-8 text-center text-sm text-muted-foreground">{t("error.track.upload_missing")}</Card>
           )}
         </>
       )}

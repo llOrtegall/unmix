@@ -12,14 +12,14 @@ describe("JobFailure", () => {
     });
 
     it("trims the message", () => {
-      expect(JobFailure.create("INVALID_MEDIA", "  bad file  ").toPrimitive().message).toBe("bad file");
+      expect(JobFailure.create("separation.invalid_media", "  bad file  ").toPrimitive().message).toBe("bad file");
     });
 
     it("describes unexpected failures with a generic code", () => {
-      expect(JobFailure.unexpected("boom").toPrimitive()).toEqual({ code: "SEPARATION_ERROR", message: "boom" });
-      expect(JobFailure.unexpected(" ").toPrimitive()).toEqual({ code: "SEPARATION_ERROR", message: "Unknown worker error." });
-      expect(JobFailure.lostFromQueue().toPrimitive().code).toBe("SEPARATION_ERROR");
-      expect(JobFailure.invalidResult().toPrimitive().code).toBe("SEPARATION_ERROR");
+      expect(JobFailure.unexpected("boom").toPrimitive()).toEqual({ code: "separation.failed", message: "boom" });
+      expect(JobFailure.unexpected(" ").toPrimitive()).toEqual({ code: "separation.failed", message: "Unknown worker error." });
+      expect(JobFailure.lostFromQueue().toPrimitive().code).toBe("separation.failed");
+      expect(JobFailure.invalidResult().toPrimitive().code).toBe("separation.failed");
     });
 
     it("compares by code and message", () => {
@@ -36,7 +36,7 @@ describe("JobFailure", () => {
     });
 
     it("rejects an empty message", () => {
-      expect(() => JobFailure.create("INVALID_MEDIA", "   ")).toThrow(InvalidJobFailureError);
+      expect(() => JobFailure.create("separation.invalid_media", "   ")).toThrow(InvalidJobFailureError);
     });
   });
 });

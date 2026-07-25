@@ -37,4 +37,4 @@ def test_stem_key_uses_prefix_without_double_slash() -> None:
 def test_only_transient_failures_are_retryable() -> None:
     assert not SeparationFailure(FailureCode.DURATION_EXCEEDED, "").retryable
     assert not SeparationFailure(FailureCode.INVALID_MEDIA, "").retryable
-    assert SeparationFailure(FailureCode.STORAGE_ERROR, "").retryable
+    assert SeparationFailure(FailureCode.SEPARATION_ERROR, "").retryable

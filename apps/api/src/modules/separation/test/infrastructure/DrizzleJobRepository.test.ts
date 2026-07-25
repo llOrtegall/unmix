@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { JobId } from "../../../shared/domain/JobId.ts";
 import { startTestDatabase, type TestDatabase } from "../../../shared/test/helpers/TestDatabase.ts";
@@ -6,6 +8,7 @@ import * as SeparationJobMother from "../helpers/SeparationJobMother.ts";
 import * as SeparationResultMother from "../helpers/SeparationResultMother.ts";
 
 const LOCK_HOLD_MS = 300;
+const FAILURE_CODES_MIGRATION = new URL("../../../../../drizzle/0005_separation_failure_codes.sql", import.meta.url);
 
 describe("DrizzleJobRepository", () => {
   let database: TestDatabase;
@@ -76,5 +79,16 @@ describe("DrizzleJobRepository", () => {
     await first;
 
     expect((await second)?.toPrimitive().status).toBe("completed");
+  });
+
+  it("renames the failure codes stored before the separation.* codes", async () => {
+    const job = SeparationJobMother.failed();
+    await repository.save(job);
+    await database.db.execute(sql`UPDATE separation_jobs SET failure = jsonb_set(failure, '{code}', '"DURATION_EXCEEDED"')`);
+    const migration = await readFile(FAILURE_CODES_MIGRATION, "utf8");
+
+    for (const statement of migration.split("--> statement-breakpoint")) await database.db.execute(sql.raw(statement));
+
+    expect((await repository.findById(job.getId()))?.toPrimitive().failure?.code).toBe("separation.duration_exceeded");
   });
 });

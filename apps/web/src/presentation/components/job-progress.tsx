@@ -52,7 +52,7 @@ export function JobProgress({ jobId, trackId, onDone }: Props) {
           <h2 className="text-lg font-semibold">{t("job.failed")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{errorMessage(t, job.error?.code ?? "")}</p>
         </div>
-        {job.error?.code !== "DURATION_EXCEEDED" && job.error?.code !== "INVALID_MEDIA" && (
+        {job.error?.code !== "separation.duration_exceeded" && job.error?.code !== "separation.invalid_media" && (
           <Button onClick={retry}>
             <RotateCcw />
             {t("job.retry")}

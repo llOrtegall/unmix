@@ -63,12 +63,22 @@ export const SeparationCompletedV1 = z
 export type SeparationCompletedV1 = z.infer<typeof SeparationCompletedV1>;
 
 export const SeparationFailureCode = z.enum([
-  "INVALID_MESSAGE",
-  "INPUT_NOT_FOUND",
-  "INVALID_MEDIA",
-  "DURATION_EXCEEDED",
-  "SEPARATION_ERROR",
-  "STORAGE_ERROR",
+  "separation.invalid_message",
+  "separation.input_not_found",
+  "separation.invalid_media",
+  "separation.duration_exceeded",
+  "separation.no_stems",
+  "separation.failed",
+  "separation.invalid_job_id",
+  "separation.invalid_track_id",
+  "separation.invalid_object_key",
+  "separation.invalid_model",
+  "separation.invalid_stem_name",
+  "separation.duplicated_stem",
+  "separation.invalid_loudness",
+  "separation.invalid_peaks",
+  "separation.invalid_file_size",
+  "separation.invalid_progress",
 ]).meta({ title: "SeparationFailureCode" });
 export type SeparationFailureCode = z.infer<typeof SeparationFailureCode>;
 

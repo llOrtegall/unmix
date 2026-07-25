@@ -1,9 +1,11 @@
 import { faker } from "@faker-js/faker";
+import { SeparationFailureCode } from "@unmix/contracts";
 import { type Processor, Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { GenericContainer, type StartedTestContainer } from "testcontainers";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { JobId } from "../../../shared/domain/JobId.ts";
+import { JobFailure } from "../../domain/JobFailure.ts";
 import { BullMqQueueRepository } from "../../infrastructure/BullMqQueueRepository.ts";
 import * as SeparationResultMother from "../helpers/SeparationResultMother.ts";
 
@@ -99,7 +101,7 @@ describe("BullMqQueueRepository", () => {
 
     it("reads the worker's failure", async () => {
       const { queue, repository } = setup();
-      const failure = { code: "DURATION_EXCEEDED", message: "Track lasts 720 s; the limit is 600 s.", retryable: false };
+      const failure = { code: "separation.duration_exceeded", message: "Track lasts 720 s; the limit is 600 s.", retryable: false };
       const id = await settle(queue, async () => {
         throw new Error(JSON.stringify(failure));
       });
@@ -133,7 +135,20 @@ describe("BullMqQueueRepository", () => {
 
       expect((await repository.findState(id)).toPrimitive()).toEqual({
         state: "failed",
-        failure: { code: "SEPARATION_ERROR", message: "segmentation fault" },
+        failure: { code: "separation.failed", message: "segmentation fault" },
+      });
+    });
+
+    it("fails with a generic code when the worker sends a code from before the rename", async () => {
+      const { queue, repository } = setup();
+      const reason = JSON.stringify({ code: "DURATION_EXCEEDED", message: "Track lasts 720 s.", retryable: false });
+      const id = await settle(queue, async () => {
+        throw new Error(reason);
+      });
+
+      expect((await repository.findState(id)).toPrimitive()).toEqual({
+        state: "failed",
+        failure: { code: "separation.failed", message: reason },
       });
     });
 
@@ -143,8 +158,12 @@ describe("BullMqQueueRepository", () => {
 
       expect((await repository.findState(id)).toPrimitive()).toEqual({
         state: "failed",
-        failure: { code: "SEPARATION_ERROR", message: "The worker returned an invalid result." },
+        failure: { code: "separation.failed", message: "The worker returned an invalid result." },
       });
+    });
+
+    it.each(SeparationFailureCode.options)("accepts the contract failure code %s", (code) => {
+      expect(JobFailure.create(code, faker.lorem.sentence()).toPrimitive().code).toBe(code);
     });
   });
 });

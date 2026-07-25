@@ -3,12 +3,11 @@ from enum import StrEnum
 
 
 class FailureCode(StrEnum):
-    INVALID_MESSAGE = "INVALID_MESSAGE"
-    INPUT_NOT_FOUND = "INPUT_NOT_FOUND"
-    INVALID_MEDIA = "INVALID_MEDIA"
-    DURATION_EXCEEDED = "DURATION_EXCEEDED"
-    SEPARATION_ERROR = "SEPARATION_ERROR"
-    STORAGE_ERROR = "STORAGE_ERROR"
+    INVALID_MESSAGE = "separation.invalid_message"
+    INPUT_NOT_FOUND = "separation.input_not_found"
+    INVALID_MEDIA = "separation.invalid_media"
+    DURATION_EXCEEDED = "separation.duration_exceeded"
+    SEPARATION_ERROR = "separation.failed"
 
 
 # Business failures that a retry cannot fix.
