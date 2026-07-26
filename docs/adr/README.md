@@ -35,3 +35,4 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0029](0029-separation-jobs-and-outbox-modules.md) | Separation jobs and the outbox as clean-architecture modules |
 | [0030](0030-identity-health-and-bootstrap.md) | Identity and health modules, server bootstrap and final dependency rules |
 | [0031](0031-worker-separation-module.md) | The worker as a clean-architecture module, and `separation.*` failure codes |
+| [0032](0032-web-modules-hooks-and-components.md) | The web as clean-architecture modules, hooks and components |
