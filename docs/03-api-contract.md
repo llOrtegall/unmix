@@ -118,9 +118,21 @@ Result (`job.returnvalue`, `SeparationCompletedV1`):
 
 Failure (`job.failedReason`, `SeparationFailureV1` as JSON):
 ```json
-{ "code": "DURATION_EXCEEDED", "message": "Track lasts 720 s; the limit is 600 s.", "retryable": false }
+{ "code": "separation.duration_exceeded", "message": "Track lasts 720 s; the limit is 600 s.", "retryable": false }
 ```
 
-Codes: `INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED` (not retryable); `SEPARATION_ERROR`, `STORAGE_ERROR` (retryable).
+Codes ([ADR 0031](adr/0031-worker-separation-module.md)). Every code except `separation.failed` is final: the worker raises `UnrecoverableError` and BullMQ does not retry.
 
-The API applies outcomes from the queue's own state ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)): on a `completed` or `failed` queue event, and for every unfinished job on startup, it reads the job from BullMQ. A failed attempt with retries left changes nothing. A result that breaks `SeparationCompletedV1`, or a `failedReason` that is not a `SeparationFailureV1`, fails the job with `SEPARATION_ERROR`.
+| Code | Meaning |
+|------|---------|
+| `separation.invalid_message` | The job data breaks `SeparationRequestedV1` |
+| `separation.input_not_found` | The uploaded file is not in storage |
+| `separation.invalid_media` | ffmpeg cannot decode the file, or it has no audio |
+| `separation.duration_exceeded` | The track is longer than `MAX_DURATION_SECONDS` |
+| `separation.no_stems` | The separator produced no stems |
+| `separation.failed` | Unexpected error (retried); the API also uses it for a job lost from the queue or an invalid worker result |
+| `separation.invalid_job_id`, `invalid_track_id`, `invalid_object_key`, `invalid_model`, `invalid_stem_name`, `duplicated_stem`, `invalid_loudness`, `invalid_peaks`, `invalid_file_size`, `invalid_progress` | A domain invariant of the worker was broken |
+
+The job's `error.code` in the HTTP API is one of these codes. Failures stored before the rename were migrated by `0005_separation_failure_codes`.
+
+The API applies outcomes from the queue's own state ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)): on a `completed` or `failed` queue event, and for every unfinished job on startup, it reads the job from BullMQ. A failed attempt with retries left changes nothing. A result that breaks `SeparationCompletedV1`, or a `failedReason` that is not a `SeparationFailureV1`, fails the job with `separation.failed`.

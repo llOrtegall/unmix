@@ -2,25 +2,32 @@
 
 Python worker that consumes `separation.requested.v1` jobs from the BullMQ queue `separation`, splits the track into stems with Demucs (CPU) and uploads them as FLAC.
 
-Architecture: hexagonal ([docs/07](../../docs/07-code-structure.md)). Layer rules are enforced by `import-linter`.
+Architecture: clean architecture, one `separation` module ([docs/07](../../docs/07-code-structure.md), [ADR 0031](../../docs/adr/0031-worker-separation-module.md)). Layer rules are enforced by `import-linter`, types by `mypy --strict`.
 
 ```
 src/unmix_worker/
-  domain/        SeparationTask, Stem, Stage, progress mapping, silence rule, failures, Result
-  application/   SeparateTrack use case + ports (ObjectStorage, MediaNormalizer, StemSeparator, ProgressReporter)
-  adapters/      s3_storage, ffmpeg_normalizer, demucs_separator, bullmq_consumer
-  contracts/     pydantic models generated from packages/contracts (do not edit generated.py)
-  main.py        composition root
+  modules/shared/domain/          DomainError and its categories
+  modules/separation/domain/      SeparationTask, Stem, StemList, Progress, AudioDuration, ... + repository Protocols, errors.py
+  modules/separation/application/ separate_track, publish_stem, factory (SeparationModule, built per job)
+  modules/separation/infrastructure/
+                                  s3_storage, ffmpeg_media, ffmpeg_preview, demucs_separator,
+                                  basic_pitch_transcriber, bullmq_progress (all *_repository)
+  consumers/separation_consumer.py  BullMQ processor: validates the message, runs separate_track, maps errors
+  contracts/                      pydantic models generated from packages/contracts (do not edit generated.py)
+  config.py                       pydantic-settings
+  main.py                         bootstrap
 ```
 
 ## Commands
 
 ```bash
 uv sync                 # install (torch CPU wheels)
-make check              # ruff + import-linter + pytest
+make check              # ruff + mypy + import-linter + pytest (coverage ≥ 80 % on modules)
 make contracts          # regenerate pydantic models after changing packages/contracts
 make run                # run locally (needs env vars, see below)
 ```
+
+Tests live in `tests/modules/separation` (domain, use cases with Object Mothers and `Mock(spec=Protocol)` RepositoryMothers, infrastructure) and `tests/consumers`. The S3 test starts SeaweedFS with Testcontainers (needs Docker), and the ffmpeg tests need `ffmpeg` on the `PATH`. Demucs and Basic Pitch are covered by the end-to-end runs.
 
 Run locally against the compose infra:
 
@@ -45,8 +52,8 @@ The image is multi-stage: uv resolves the venv in a build stage (no package cach
 - Success: return value `SeparationCompletedV1` (stems with key, size, `silent` flag and, for pitched stems with content, `midiKey`).
 - MIDI: Basic Pitch through its ONNX model, no TensorFlow ([ADR 0027](../../docs/adr/0027-midi-transcription.md)). A transcription failure is logged and the stem ships without MIDI.
 - Logs: each stage's duration (`job <id> separating took 79.8 s`) and the upload time on completion.
-- Business failure (`INVALID_MESSAGE`, `INPUT_NOT_FOUND`, `INVALID_MEDIA`, `DURATION_EXCEEDED`): `UnrecoverableError`, no retries. `failedReason` holds a JSON `SeparationFailureV1`.
-- Unexpected failure: regular error, retried by BullMQ according to the producer's `attempts`/`backoff`.
+- Business failure (a domain `ValidationError` or `NotFoundError`, e.g. `separation.invalid_media`, `separation.duration_exceeded`, `separation.input_not_found`; or `separation.invalid_message` when the job data breaks the contract): `UnrecoverableError`, no retries. `failedReason` holds a JSON `SeparationFailureV1` with the error's code. Full list in [docs/03](../../docs/03-api-contract.md).
+- Unexpected failure: `separation.failed`, retried by BullMQ according to the producer's `attempts`/`backoff`.
 - Worker crash: the job lock expires (60 s) and BullMQ re-queues the stalled job. `maxStalledCount: 2`, so a job survives two crashes before it fails.
 
 ## Environment

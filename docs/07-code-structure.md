@@ -86,26 +86,33 @@ Rules of the target layout:
 - Entrypoints (`routes/`, `middlewares/`, `consumers/`, `jobs/`) parse input, call one use case and serialize with `toPrimitive()`.
 - Domain and application code import no packages and no `node:` modules; byte streams are `ReadableStream<Uint8Array>`.
 
-## Worker (`services/worker`) — hexagonal
+## Worker (`services/worker`) — clean architecture ([ADR 0031](adr/0031-worker-separation-module.md))
 
 ```
 src/unmix_worker/
-  main.py                      composition root
-  domain/                      SeparationTask, Stem, errors
-  application/
-    separate_track.py          use case
-    ports.py                   StemSeparator, MediaNormalizer, ObjectStorage, ProgressReporter
-  adapters/
-    demucs_separator.py
-    ffmpeg_normalizer.py
-    s3_storage.py
-    bullmq_consumer.py         interface: turns a message into a use case call
-    bullmq_progress.py
+  modules/
+    shared/domain/             DomainError + ValidationError, NotFoundError, ConflictError, ForbiddenError
+    separation/
+      domain/                  SeparationTask (entity), JobId, TrackId, ObjectKey, ModelName, StemName, Stage,
+                               Progress, RelativeLoudness, WaveformPeaks, FileSize, AudioDuration,
+                               NormalizedAudio, ContentType, SeparatedStem(+List), Stem, StemList,
+                               SeparationOutcome, errors.py; Protocols: StorageRepository, MediaRepository,
+                               PreviewRepository, SeparatorRepository, TranscriberRepository, ProgressRepository
+      application/             separate_track.py, publish_stem.py (closures), factory.py (SeparationModule, per job)
+      infrastructure/          s3_storage_repository, ffmpeg_media_repository, ffmpeg_preview_repository,
+                               demucs_separator_repository, basic_pitch_transcriber_repository,
+                               bullmq_progress_repository, s3_client
+  consumers/
+    separation_consumer.py     pydantic message → separate_track → completed contract; maps errors to the queue
   contracts/                   generated pydantic models (do not edit)
+  config.py                    pydantic-settings, the only reader of the environment
+  main.py                      bootstrap: preloads Demucs and Basic Pitch, builds the S3 client, starts the Worker
 tests/
-  unit/                        domain + use case with fakes
-  integration/                 real adapters (testcontainers)
+  modules/separation/{domain,application,infrastructure,helpers}   Object Mothers, RepositoryMothers (Mock(spec=Protocol))
+  consumers/                   the consumer with a fake module
 ```
+
+The use cases are synchronous: separation is CPU-bound and runs in `asyncio.to_thread`. A `ValidationError` or `NotFoundError` becomes a BullMQ `UnrecoverableError` with the error's `separation.*` code; anything else is retried as `separation.failed`.
 
 ## Web (`apps/web`) — Clean Architecture
 
@@ -146,7 +153,7 @@ generated/json-schema/
 
 - `dependency-cruiser` (api): `domain` imports only domain code (no packages, no `node:` modules); `application` imports only its own folder and domain code, except `factory.ts`; modules never import entrypoints, `app.ts`, `server.ts` or `config.ts`; entrypoints and `app.ts` never import infrastructure; a module reaches another only through its `domain/`, its `application/factory.ts` or `identity/index.ts`; production code never imports tests, and tests may reuse another module's Mothers.
 - `dependency-cruiser` (web): forbids `domain → *`, `application → infrastructure|presentation`, `presentation → infrastructure`.
-- `import-linter` (worker): a `layers` contract with `adapters > application > domain`.
+- `import-linter` (worker): `infrastructure > application > domain` inside each module (only `application.factory` may import infrastructure); domain and application import no packages and not the generated contracts (except the factory); `consumers` never import infrastructure; modules never import `consumers`, `config` or `main`. `mypy --strict` runs in the same check.
 - CI fails on any violation.
 
 ## Test strategy
@@ -155,7 +162,7 @@ generated/json-schema/
 |-------|------|------|
 | Unit | Domain (guards, behaviour, round-trips) and use cases with Object Mothers and RepositoryMothers (in-memory fakes where not migrated yet) | vitest, pytest |
 | HTTP | Routes and middlewares through Fastify `inject` | vitest |
-| Integration | API repositories against real Postgres and Redis (Drizzle, outbox, BullMQ) | Testcontainers |
+| Integration | API repositories against real Postgres and Redis (Drizzle, outbox, BullMQ); worker storage against SeaweedFS and media against a real ffmpeg | Testcontainers |
 | Contract | Generated schemas up to date, valid messages | CI script |
 | API e2e | Full HTTP flow on the Docker stack, two users | `apps/api/test/e2e.ts` |
 | Browser e2e | User flows on desktop and mobile | Playwright |
