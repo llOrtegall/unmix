@@ -107,7 +107,7 @@ Every service moves to the shared clean-architecture rules ([ADR 0028](adr/0028-
 - [x] Step 2 — API: library module (immutable domain, curried use cases, factory, routes as Fastify plugins, `track.*` codes).
 - [x] Step 3 — API: separation module, outbox module, queue consumers and jobs, Testcontainers tests ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)); `Result` and `shared/kernel` removed.
 - [x] Step 4 — API: identity and health modules, `server.ts` bootstrap, web streams in the domain, final dependency rules ([ADR 0030](adr/0030-identity-health-and-bootstrap.md)).
-- [ ] Step 5 — Worker.
+- [x] Step 5 — Worker: `separation` module (frozen-dataclass domain, closure use cases, per-job factory), queue consumer, pydantic-settings config, `separation.*` failure codes with a data migration, `mypy --strict` ([ADR 0031](adr/0031-worker-separation-module.md)).
 - [ ] Step 6 — Web.
 - [ ] Step 7 — Docs and READMEs.
 
