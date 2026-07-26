@@ -64,6 +64,10 @@ explicit = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--cov=unmix_worker.modules --cov-report=term-missing:skip-covered --cov-fail-under=80"
+
+[tool.coverage.run]
+omit = ["*/factory.py"]
 
 [tool.ruff]
 line-length = 100
@@ -73,33 +77,90 @@ extend-exclude = ["src/unmix_worker/contracts/generated.py", "spike"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 
-# Architecture rules (ADR 0018): dependencies point toward the domain.
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+files = ["src", "tests", "scripts"]
+
+[[tool.mypy.overrides]]
+module = "unmix_worker.contracts.generated"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["basic_pitch.*", "bullmq.*", "onnxruntime.*", "soundfile"]
+ignore_missing_imports = true
+
+# Architecture rules (ADR 0018, ADR 0031): dependencies point toward the domain.
 [tool.importlinter]
 root_package = "unmix_worker"
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
-name = "Hexagonal layers"
+name = "Module layers point toward the domain"
 type = "layers"
-layers = [
-  "unmix_worker.main",
-  "unmix_worker.adapters",
-  "unmix_worker.application",
-  "unmix_worker.domain",
+containers = ["unmix_worker.modules.separation"]
+layers = ["infrastructure", "application", "domain"]
+ignore_imports = [
+  "unmix_worker.modules.separation.application.factory -> unmix_worker.modules.separation.infrastructure.**",
 ]
 
 [[tool.importlinter.contracts]]
-name = "Domain and application stay free of frameworks"
+name = "The domain imports no packages, contracts or entrypoints"
 type = "forbidden"
-source_modules = ["unmix_worker.domain", "unmix_worker.application"]
+source_modules = ["unmix_worker.modules.shared.domain", "unmix_worker.modules.separation.domain"]
+forbidden_modules = [
+  "unmix_worker.contracts",
+  "unmix_worker.consumers",
+  "unmix_worker.config",
+  "unmix_worker.main",
+  "bullmq",
+  "boto3",
+  "botocore",
+  "pydantic",
+  "pydantic_settings",
+  "torch",
+  "torchaudio",
+  "demucs",
+  "soundfile",
+  "numpy",
+  "basic_pitch",
+  "onnxruntime",
+]
+
+[[tool.importlinter.contracts]]
+name = "Use cases import no packages or contracts, except the factory"
+type = "forbidden"
+source_modules = ["unmix_worker.modules.separation.application"]
 forbidden_modules = [
   "unmix_worker.contracts",
   "bullmq",
   "boto3",
+  "botocore",
+  "pydantic",
+  "pydantic_settings",
   "torch",
+  "torchaudio",
   "demucs",
   "soundfile",
-  "pydantic",
+  "numpy",
   "basic_pitch",
   "onnxruntime",
 ]
+ignore_imports = [
+  "unmix_worker.modules.separation.application.factory -> bullmq",
+  "unmix_worker.modules.separation.application.factory -> unmix_worker.modules.separation.infrastructure.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "Entrypoints never import infrastructure"
+type = "forbidden"
+source_modules = ["unmix_worker.consumers"]
+forbidden_modules = ["unmix_worker.modules.separation.infrastructure"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Modules never import entrypoints or the bootstrap"
+type = "forbidden"
+source_modules = ["unmix_worker.modules"]
+forbidden_modules = ["unmix_worker.consumers", "unmix_worker.config", "unmix_worker.main"]

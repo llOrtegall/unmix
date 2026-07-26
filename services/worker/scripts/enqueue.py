@@ -6,6 +6,7 @@ Usage: uv run --env-file ../../.env scripts/enqueue.py <file> [--model htdemucs_
 
 import argparse
 import asyncio
+import io
 import json
 import os
 import sys
@@ -21,7 +22,8 @@ from unmix_worker.contracts.generated import SeparationRequestedV1
 
 
 async def main() -> None:
-    sys.stdout.reconfigure(line_buffering=True)  # progress shows up when piped
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(line_buffering=True)  # progress shows up when piped
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=Path)
     parser.add_argument("--model", default="htdemucs_6s")

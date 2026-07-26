@@ -1,63 +1,56 @@
-"""Composition root (ADR 0015): read config, wire adapters, start the queue consumer."""
-
 import asyncio
 import logging
-import os
 import signal
+from functools import partial
 
 from bullmq import Worker
 
-from unmix_worker.adapters.basic_pitch_transcriber import BasicPitchTranscriber
-from unmix_worker.adapters.bullmq_consumer import SeparationJobProcessor
-from unmix_worker.adapters.demucs_separator import DemucsSeparator
-from unmix_worker.adapters.ffmpeg_normalizer import FfmpegNormalizer, FfmpegPreviewEncoder
-from unmix_worker.adapters.s3_storage import S3Storage
-from unmix_worker.application.separate_track import SeparateTrack
+from unmix_worker.config import Settings
+from unmix_worker.consumers.separation_consumer import SeparationConsumer
 from unmix_worker.contracts import SEPARATION_QUEUE
+from unmix_worker.modules.separation.application.factory import separation_module
+from unmix_worker.modules.separation.infrastructure.basic_pitch_transcriber_repository import (
+    BasicPitchTranscriberRepository,
+)
+from unmix_worker.modules.separation.infrastructure.demucs_separator_repository import (
+    DemucsSeparatorRepository,
+)
+from unmix_worker.modules.separation.infrastructure.s3_client import create_s3_client
 
 log = logging.getLogger("unmix_worker")
 
 
-def env(name: str, default: str | None = None) -> str:
-    value = os.environ.get(name, default)
-    if value is None:
-        raise RuntimeError(f"Missing environment variable {name}")
-    return value
-
-
 async def run() -> None:
+    settings = Settings()
     logging.basicConfig(
-        level=env("LOG_LEVEL", "INFO"),
+        level=settings.log_level,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
 
-    separator = DemucsSeparator(threads=int(env("TORCH_THREADS", "0")) or None)
-    model = env("DEMUCS_MODEL", "htdemucs_6s")
-    log.info("loading model %s", model)
-    separator.preload(model)
-    transcriber = BasicPitchTranscriber()
+    separator = DemucsSeparatorRepository(threads=settings.torch_threads or None)
+    log.info("loading model %s", settings.demucs_model)
+    separator.preload(settings.demucs_model)
+    transcriber = BasicPitchTranscriberRepository()
     transcriber.preload()
 
-    use_case = SeparateTrack(
-        storage=S3Storage(
-            endpoint=env("S3_ENDPOINT"),
-            region=env("S3_REGION", "us-east-1"),
-            access_key=env("S3_ACCESS_KEY"),
-            secret_key=env("S3_SECRET_KEY"),
-            bucket=env("S3_BUCKET"),
+    build_module = partial(
+        separation_module,
+        s3_client=create_s3_client(
+            endpoint=settings.s3_endpoint,
+            region=settings.s3_region,
+            access_key=settings.s3_access_key,
+            secret_key=settings.s3_secret_key,
         ),
-        normalizer=FfmpegNormalizer(),
-        separator=separator,
-        previews=FfmpegPreviewEncoder(),
-        transcriber=transcriber,
-        max_duration_seconds=float(env("MAX_DURATION_SECONDS", "600")),
+        bucket=settings.s3_bucket,
+        separator_repository=separator,
+        transcriber_repository=transcriber,
+        max_duration_seconds=settings.max_duration_seconds,
     )
-
     worker = Worker(
         SEPARATION_QUEUE,
-        SeparationJobProcessor(use_case),
+        SeparationConsumer(build_module),
         {
-            "connection": env("REDIS_URL"),
+            "connection": settings.redis_url,
             # One CPU-heavy job at a time per process; scale with more containers.
             "concurrency": 1,
             "lockDuration": 60_000,

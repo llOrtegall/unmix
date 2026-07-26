@@ -12,6 +12,7 @@ contracts:
 
 lint:
 	uv run ruff check src tests scripts
+	uv run mypy
 	uv run lint-imports
 
 test:
