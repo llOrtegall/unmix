@@ -17,22 +17,22 @@ import * as MixMother from "../helpers/MixMother.ts";
 import * as PlaybackRepositoryMother from "../helpers/PlaybackRepositoryMother.ts";
 
 describe("loadMix", () => {
-  it("loads the stems and applies a mix with a channel per stem", async () => {
+  it("returns a mix with a channel per stem right away and applies it while the audio loads", async () => {
     const playbackRepository = PlaybackRepositoryMother.create();
     const stems = StemMother.list(["bass", "vocals"]);
 
-    const mix = await loadMix({ playbackRepository })(stems);
+    const { mix, ready } = loadMix({ playbackRepository })(stems);
+    await ready;
 
     expect(mix.equals(MixMother.create(["vocals", "bass"]))).toBe(true);
     expect(playbackRepository.load).toHaveBeenCalledWith(stems);
     expect(playbackRepository.apply).toHaveBeenCalledWith(mix);
   });
 
-  it("fails without applying a mix when a stem cannot be loaded", async () => {
+  it("reports a stem that cannot be loaded", async () => {
     const playbackRepository = PlaybackRepositoryMother.create({ load: vi.fn().mockRejectedValue(new PlaybackLoadFailedError("bass")) });
 
-    await expect(loadMix({ playbackRepository })(StemMother.list())).rejects.toThrow(PlaybackLoadFailedError);
-    expect(playbackRepository.apply).not.toHaveBeenCalled();
+    await expect(loadMix({ playbackRepository })(StemMother.list()).ready).rejects.toThrow(PlaybackLoadFailedError);
   });
 });
 

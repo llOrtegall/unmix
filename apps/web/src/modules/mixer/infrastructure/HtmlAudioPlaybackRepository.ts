@@ -17,6 +17,7 @@ export class HtmlAudioPlaybackRepository implements PlaybackRepository {
   private readonly elements = new Map<StemNamePrimitive, HTMLAudioElement>();
   private readonly endedListeners = new Set<() => void>();
   private master: HTMLAudioElement | null = null;
+  private mix: Mix | null = null;
   private syncTimer: number | null = null;
 
   async load(stems: StemList): Promise<void> {
@@ -34,6 +35,8 @@ export class HtmlAudioPlaybackRepository implements PlaybackRepository {
     });
     this.master = this.elements.values().next().value ?? null;
     this.master?.addEventListener("ended", this.handleEnded);
+    // Gains set while the elements did not exist yet still have to reach them.
+    if (this.mix) this.apply(this.mix);
     await Promise.all(ready);
   }
 
@@ -75,6 +78,7 @@ export class HtmlAudioPlaybackRepository implements PlaybackRepository {
   }
 
   apply(mix: Mix): void {
+    this.mix = mix;
     for (const [name, gain] of mix.gains()) {
       const element = this.elements.get(name.toPrimitive());
       if (element) element.volume = gain.toPrimitive();

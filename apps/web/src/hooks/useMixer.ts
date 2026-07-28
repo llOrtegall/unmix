@@ -40,10 +40,11 @@ export const useMixer = create<MixerState>()((set, get) => {
 
     async load(stems) {
       const loading = Symbol("load");
-      set({ status: "loading", isPlaying: false, mix: null, error: null, loading });
+      const { mix, ready } = mixer.loadMix(stems);
+      set({ status: "loading", isPlaying: false, mix, error: null, loading });
       try {
-        const mix = await mixer.loadMix(stems);
-        if (get().loading === loading) set({ status: "ready", mix });
+        await ready;
+        if (get().loading === loading) set({ status: "ready" });
       } catch (failure) {
         if (get().loading === loading) set({ status: "error", error: failure as DomainError });
       }
