@@ -15,7 +15,7 @@ import * as JobMother from "../helpers/JobMother.ts";
 describe("Job", () => {
   describe("Basic behaviour", () => {
     it("survives a primitive round-trip", () => {
-      const primitive = JobMother.createPrimitive({ failure: { code: "separation.failed", message: "boom" } });
+      const primitive = JobMother.createPrimitive({ status: "failed", failure: { code: "separation.failed", message: "boom" } });
 
       expect(Job.fromPrimitive(primitive).toPrimitive()).toEqual(primitive);
     });
@@ -68,6 +68,8 @@ describe("Job", () => {
       ["fractional progress", () => Progress.create(4.5), InvalidProgressError],
       ["failure code from another context", () => JobFailure.create("track.not_found", "x"), InvalidJobFailureError],
       ["empty failure code", () => JobFailure.create("separation.", "x"), InvalidJobFailureError],
+      ["failed job without a failure", () => JobMother.create({ status: "failed" }), InvalidJobFailureError],
+      ["running job with a failure", () => JobMother.create({ failure: { code: "separation.failed", message: "x" } }), InvalidJobFailureError],
     ])("rejects an invalid %s", (_, build, error) => {
       expect(build).toThrow(error);
     });

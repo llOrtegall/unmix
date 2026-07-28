@@ -1,4 +1,5 @@
 import { TrackId, type TrackIdPrimitive } from "../../track/domain/TrackId.ts";
+import { InvalidJobFailureError } from "./errors/InvalidJobFailureError.ts";
 import { JobFailure, type JobFailurePrimitive } from "./JobFailure.ts";
 import { JobId, type JobIdPrimitive } from "./JobId.ts";
 import { JobStatus, type JobStatusPrimitive } from "./JobStatus.ts";
@@ -41,6 +42,7 @@ export class Job {
   }
 
   static create(attributes: JobAttributes): Job {
+    Job.ensureOnlyFailedJobsHaveAFailure(attributes);
     return new Job(attributes);
   }
 
@@ -53,6 +55,10 @@ export class Job {
       progress: Progress.fromPrimitive(data.progress),
       failure: data.failure === null ? null : JobFailure.fromPrimitive(data.failure),
     });
+  }
+
+  private static ensureOnlyFailedJobsHaveAFailure({ status, failure }: JobAttributes): void {
+    if (status.hasFailed() !== (failure !== null)) throw new InvalidJobFailureError(`a ${status.toPrimitive()} job cannot have failure ${failure?.getCode() ?? "null"}`);
   }
 
   getId(): JobId {
