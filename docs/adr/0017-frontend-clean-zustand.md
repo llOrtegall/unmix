@@ -1,6 +1,6 @@
 # 0017 — Frontend: Clean Architecture + Zustand
 
-- **Status:** Accepted, amended by [0028](0028-clean-architecture-skills.md)
+- **Status:** Superseded by [0032](0032-web-modules-hooks-and-components.md) (amended earlier by [0028](0028-clean-architecture-skills.md))
 - **Date:** 2026-10-27
 
 ## Context

@@ -1,6 +1,6 @@
 # 0016 — Contracts: zod → JSON Schema → pydantic
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [0031](0031-worker-separation-module.md)
 - **Date:** 2026-10-27
 
 ## Context

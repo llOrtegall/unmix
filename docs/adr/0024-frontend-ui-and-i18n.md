@@ -1,6 +1,6 @@
 # 0024 — Frontend: dark studio theme, shadcn/ui, Tailwind v4 and in-house i18n
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [0032](0032-web-modules-hooks-and-components.md)
 - **Date:** 2026-10-27
 
 ## Context

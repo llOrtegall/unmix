@@ -1,6 +1,6 @@
 # 0018 — Dependency rules in CI
 
-- **Status:** Accepted, amended by [0028](0028-clean-architecture-skills.md) and [0030](0030-identity-health-and-bootstrap.md)
+- **Status:** Accepted, amended by [0028](0028-clean-architecture-skills.md), [0030](0030-identity-health-and-bootstrap.md), [0031](0031-worker-separation-module.md) and [0032](0032-web-modules-hooks-and-components.md)
 - **Date:** 2026-10-27
 
 ## Context

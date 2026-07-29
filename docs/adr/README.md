@@ -20,7 +20,7 @@ Short MADR format. One decision per file. To change a decision, write a new ADR 
 | [0014](0014-transactional-outbox.md) | Transactional outbox |
 | [0015](0015-manual-composition-root.md) | Manual dependency injection (superseded by 0028) |
 | [0016](0016-contracts-zod-json-schema-pydantic.md) | Contracts: zod → JSON Schema → pydantic |
-| [0017](0017-frontend-clean-zustand.md) | Frontend: Clean Architecture + Zustand |
+| [0017](0017-frontend-clean-zustand.md) | Frontend: Clean Architecture + Zustand (superseded by 0032) |
 | [0018](0018-dependency-rules-in-ci.md) | Dependency rules in CI |
 | [0019](0019-storage-seaweedfs.md) | Local S3 storage: SeaweedFS instead of MinIO |
 | [0020](0020-flac-stems-and-silence.md) | FLAC stems and silent-stem detection |

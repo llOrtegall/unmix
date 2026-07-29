@@ -114,32 +114,33 @@ tests/
 
 The use cases are synchronous: separation is CPU-bound and runs in `asyncio.to_thread`. A `ValidationError` or `NotFoundError` becomes a BullMQ `UnrecoverableError` with the error's `separation.*` code; anything else is retried as `separation.failed`.
 
-## Web (`apps/web`) — Clean Architecture
+## Web (`apps/web`) — clean architecture ([ADR 0032](adr/0032-web-modules-hooks-and-components.md))
 
 ```
 src/
-  main.tsx                     React startup
-  container.ts                 composition root
-  domain/
-    track.ts, stem.ts, user.ts models
-    mix.ts                     mixer rules (solo, mute, effective gain)
-  application/
-    use-cases/                 UploadTrack, LoadTrack, WatchJob, RetrySeparation
-    ports/                     SessionGateway, TrackGateway, UploadGateway, JobEventsGateway, AudioEngine
-  infrastructure/
-    auth/                      BetterAuthSessionGateway
-    http/                      HttpTrackGateway, FetchPeaksGateway
-    sse/                       EventSourceJobEvents
-    upload/                    XhrUploadGateway
-    audio/                     HtmlAudioEngine
-  presentation/
-    session.tsx, services.tsx  context providers
-    stores/                    Zustand (mixer)
-    pages/, components/, i18n/
-test/
-  unit/                        vitest
-  e2e/                         Playwright against the Docker stack
+  modules/
+    shared/domain/             DomainError + ValidationError, NotFoundError, ConflictError; RequestFailedError
+                               (API code, request.failed, request.network), SessionExpiredError, Unsubscribe
+    shared/infrastructure/     http.ts (httpGet / httpSend; 401 → SessionExpiredError + expiry listeners)
+    track/                     TrackSummary, Track, TrackList, TrackPage, Stem, StemList (mixer order), Waveforms,
+                               UploadCandidate, MediaType, UploadTicket, UploadProgress, ...; listTracks, findTrack,
+                               deleteTrack, uploadTrack; HttpTrackRepository, XhrUploadRepository, HttpPeaksRepository
+    separation/                Job, JobFailure (canBeRetried), JobStatus, Stage, Progress; watchJob, requestSeparation;
+                               HttpJobRepository, EventSourceJobEventsRepository
+    session/                   User, UserName, Email, AvatarUrl; findCurrentUser, signInWithGoogle, signOut,
+                               watchSessionExpiry; BetterAuthSessionRepository, HttpSessionExpiryRepository
+    mixer/                     Mix (solo wins over mute, gains), ChannelList, Channel, Volume, Playhead; loadMix,
+                               togglePlayback, seekTo, findPlayhead, set/toggle channel use cases; HtmlAudioPlaybackRepository
+    <m>/test/{domain,application,infrastructure,helpers}
+  hooks/                       useSession (zustand), useTracks, useTrack, useUpload, useJob, useMixer (zustand), usePlayhead
+  components/                  containers (TrackLibrary, Uploader, JobProgress, Mixer, AccountMenu) and presenters;
+                               ui/ = vendored shadcn primitives
+  pages/                       LibraryPage, SignInPage, TrackPage
+  i18n/                        messages.ts, useT.ts (persisted locale), errorMessages.ts (useErrorMessage: code → text)
+  lib/utils.ts, config.ts, App.tsx, main.tsx
 ```
+
+Each `factory.ts` exports a module instance (`tracks`, `separation`, `session`, `mixer`) that hooks import; there is no service context. Containers use hooks and pass domain objects and callbacks to presenters, which only take props (plus `useT` for text). Every user-facing error text comes from `useErrorMessage`. Component and hook tests sit next to their file and mock the module instance.
 
 ## Contracts (`packages/contracts`)
 
@@ -152,7 +153,7 @@ generated/json-schema/
 ## Automatic checks ([ADR 0018](adr/0018-dependency-rules-in-ci.md))
 
 - `dependency-cruiser` (api): `domain` imports only domain code (no packages, no `node:` modules); `application` imports only its own folder and domain code, except `factory.ts`; modules never import entrypoints, `app.ts`, `server.ts` or `config.ts`; entrypoints and `app.ts` never import infrastructure; a module reaches another only through its `domain/`, its `application/factory.ts` or `identity/index.ts`; production code never imports tests, and tests may reuse another module's Mothers.
-- `dependency-cruiser` (web): forbids `domain → *`, `application → infrastructure|presentation`, `presentation → infrastructure`.
+- `dependency-cruiser` (web): the same module rules as the API (`domain` imports only domain code and no packages; `application` only its own folder and domain code, except `factory.ts`; modules reach each other only through `domain/` or the factory); hooks, components, pages, `i18n`, `App.tsx` and `main.tsx` never import infrastructure; modules never import them; production code never imports tests.
 - `import-linter` (worker): `infrastructure > application > domain` inside each module (only `application.factory` may import infrastructure); domain and application import no packages and not the generated contracts (except the factory); `consumers` never import infrastructure; modules never import `consumers`, `config` or `main`. `mypy --strict` runs in the same check.
 - CI fails on any violation.
 
@@ -160,7 +161,8 @@ generated/json-schema/
 
 | Level | What | Tool |
 |-------|------|------|
-| Unit | Domain (guards, behaviour, round-trips) and use cases with Object Mothers and RepositoryMothers (in-memory fakes where not migrated yet) | vitest, pytest |
+| Unit | Domain (guards, behaviour, round-trips) and use cases with Object Mothers and RepositoryMothers | vitest, pytest |
+| Components | Web containers through what the user sees, with the module instance mocked | vitest + Testing Library |
 | HTTP | Routes and middlewares through Fastify `inject` | vitest |
 | Integration | API repositories against real Postgres and Redis (Drizzle, outbox, BullMQ); worker storage against SeaweedFS and media against a real ffmpeg | Testcontainers |
 | Contract | Generated schemas up to date, valid messages | CI script |
