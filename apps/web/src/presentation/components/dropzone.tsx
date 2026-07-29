@@ -3,10 +3,10 @@ import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import type { UploadPhase } from "@/application/use-cases/upload-track.ts";
 import { ACCEPTED_TYPES, MAX_UPLOAD_MB } from "@/domain/upload-policy.ts";
-import { Button } from "@/presentation/components/ui/button.tsx";
-import { Progress } from "@/presentation/components/ui/progress.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Progress } from "@/components/ui/progress.tsx";
 import { errorMessage, useT } from "@/presentation/i18n/use-t.ts";
-import { cn } from "@/presentation/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 import { useServices } from "@/presentation/services.tsx";
 
 type State = { kind: "idle"; error?: string } | { kind: "busy"; file: File; phase: UploadPhase };

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { type Locale } from "@/presentation/i18n/messages.ts";
 import { useLocale, useT } from "@/presentation/i18n/use-t.ts";
-import { cn } from "@/presentation/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 import { useSession } from "@/presentation/session.tsx";
 
 export function AppShell({ children }: { children: ReactNode }) {

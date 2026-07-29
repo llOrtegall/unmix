@@ -1,6 +1,6 @@
 import { Slider as SliderPrimitive } from "radix-ui";
 import type * as React from "react";
-import { cn } from "@/presentation/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 
 export function Slider({ className, style, ...props }: React.ComponentProps<typeof SliderPrimitive.Root>) {
   return (

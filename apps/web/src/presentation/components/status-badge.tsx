@@ -1,6 +1,6 @@
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import type { TrackStatus } from "@/domain/track.ts";
-import { Badge } from "@/presentation/components/ui/badge.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { useT } from "@/presentation/i18n/use-t.ts";
 
 export function StatusBadge({ status }: { status: TrackStatus }) {

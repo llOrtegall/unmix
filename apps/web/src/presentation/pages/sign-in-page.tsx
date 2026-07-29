@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/presentation/components/ui/button.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import { errorMessage, useT } from "@/presentation/i18n/use-t.ts";
 import { useSession } from "@/presentation/session.tsx";
 

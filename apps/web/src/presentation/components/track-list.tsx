@@ -12,10 +12,10 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/presentation/components/ui/alert-dialog.tsx";
-import { Button } from "@/presentation/components/ui/button.tsx";
+} from "@/components/ui/alert-dialog.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import { errorMessage, useLocale, useT } from "@/presentation/i18n/use-t.ts";
-import { formatDuration } from "@/presentation/lib/utils.ts";
+import { formatDuration } from "@/lib/utils.ts";
 import { DemoBadge } from "@/presentation/components/demo-credit.tsx";
 import { useServices } from "@/presentation/services.tsx";
 

@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import type { Job } from "@/domain/job.ts";
 import { STEM_ORDER } from "@/domain/stem.ts";
 import { stemColor } from "@/presentation/components/stem-style.ts";
-import { Button } from "@/presentation/components/ui/button.tsx";
-import { Card } from "@/presentation/components/ui/card.tsx";
-import { Progress } from "@/presentation/components/ui/progress.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
+import { Progress } from "@/components/ui/progress.tsx";
 import { errorMessage, useT } from "@/presentation/i18n/use-t.ts";
 import { useServices } from "@/presentation/services.tsx";
 

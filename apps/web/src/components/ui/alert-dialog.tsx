@@ -1,7 +1,7 @@
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import type * as React from "react";
 import { buttonClass } from "./button-class.ts";
-import { cn } from "@/presentation/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
