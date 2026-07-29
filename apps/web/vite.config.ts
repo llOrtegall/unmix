@@ -12,14 +12,15 @@ export default defineConfig({
     proxy: { "/api": "http://localhost:3000", "/health": "http://localhost:3000" },
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}", "test/unit/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     clearMocks: true,
     coverage: {
       provider: "v8",
       include: ["src/modules/**", "src/components/**", "src/hooks/**"],
-      exclude: ["**/test/**", "**/factory.ts", "src/components/ui/**"],
+      exclude: ["**/test/**", "**/*.test.{ts,tsx}", "**/factory.ts", "src/components/ui/**"],
+      thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },
 });
