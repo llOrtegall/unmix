@@ -32,6 +32,7 @@ describe("registerUpload", () => {
       const saved = trackRepository.save.mock.calls[0]![0].toPrimitive();
       expect(saved).toMatchObject({ id: ticket.trackId, title: "My Song", status: "awaiting_upload" });
       expect(storageRepository.signUpload.mock.calls[0]![0].toPrimitive()).toBe(saved.inputKey);
+      expect(storageRepository.signUpload.mock.calls[0]![2].toPrimitive()).toBe(1_000);
       expect(ticket.expiresInSeconds).toBe(900);
     });
   });

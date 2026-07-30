@@ -181,6 +181,10 @@ export class Track {
     return this.inputKey;
   }
 
+  getSize(): FileSize {
+    return this.size;
+  }
+
   getStems(): StemList {
     return this.stems;
   }
