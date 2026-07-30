@@ -17,7 +17,9 @@ const environment = z.object({
   MAX_UPLOAD_MB: z.coerce.number().positive().default(200),
   DEMUCS_MODEL: z.string().default("htdemucs_6s"),
   LOG_LEVEL: z.string().default("info"),
-  BETTER_AUTH_SECRET: z.string(),
+  // Better Auth silently falls back to a public default secret when this is empty
+  // and NODE_ENV is not "production", so refuse to start without a real one.
+  BETTER_AUTH_SECRET: z.string().min(32),
   // The browser reaches /api/auth through the web origin (Vite or nginx proxy).
   BETTER_AUTH_URL: z.url().optional(),
   GOOGLE_CLIENT_ID: z.string(),
