@@ -7,7 +7,7 @@ Reference environment: Windows + WSL2 (Ubuntu), Node 24 via nvm, Python 3.
 | Tool | Used for | Install |
 |------|----------|---------|
 | Docker | Local infra | Docker Desktop with WSL integration enabled, or `sudo apt install docker.io docker-compose-v2` |
-| ffmpeg | Extract/normalize audio, trim the demo video | `sudo apt install ffmpeg` |
+| ffmpeg | Extract/normalize audio, trim the demo video, worker tests | `sudo apt install ffmpeg` |
 | pnpm | JS monorepo | `corepack enable && corepack prepare pnpm@latest --activate` |
 | uv | Worker Python environment | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 
@@ -60,6 +60,23 @@ pnpm --filter @unmix/api demo:seed        # once per fresh stack: the demo song
 ```
 
 After recreating the `api` container, restart `web` too: nginx keeps the old API address and answers 502.
+
+## Checks
+
+```bash
+pnpm --filter @unmix/api check            # typecheck + dependency rules + tests (Testcontainers: needs Docker)
+pnpm --filter @unmix/web check            # typecheck + dependency rules + unit and component tests
+make -C services/worker check             # ruff + mypy --strict + import-linter + pytest (Docker for SeaweedFS, ffmpeg on PATH)
+pnpm --filter @unmix/contracts typecheck
+pnpm contracts:generate                   # after changing packages/contracts; must leave no diff
+```
+
+End to end, with the stack running and the demo seeded:
+
+```bash
+cd apps/api && node --env-file=../../.env test/e2e.ts /path/to/song.mp3   # API flow as two test users
+pnpm --filter @unmix/web e2e                                             # browser suite; --grep-invert @slow skips the real Demucs run
+```
 
 ## Resources
 

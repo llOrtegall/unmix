@@ -6,7 +6,7 @@ Proof of concept: upload a song (audio or video) and split it into its instrumen
 
 ## Status
 
-Phases 0–6 are done: web, API and worker work end to end, with Google sign-in, private libraries, a demo song and browser e2e tests ([spike results](docs/spike-demucs.md)). See the [roadmap](docs/02-roadmap.md) for what is still open.
+Phases 0–6 are done: web, API and worker work end to end, with Google sign-in, private libraries, a demo song, MIDI transcription and browser e2e tests ([spike results](docs/spike-demucs.md)). All three services were then refactored to one set of clean-architecture rules ([ADR 0028](docs/adr/0028-clean-architecture-skills.md)). See the [roadmap](docs/02-roadmap.md) for what is still open.
 
 Demo song: "La" by Shane Ivers (https://www.silvermansound.com), licensed under CC BY 4.0 ([assets/demo](assets/demo/README.md)).
 
@@ -17,14 +17,14 @@ Demo song: "La" by Shane Ivers (https://www.silvermansound.com), licensed under 
 | Frontend | React + Vite + TypeScript, Tailwind v4, shadcn/ui, Zustand |
 | API | Node.js + TypeScript, Fastify, Drizzle ORM, zod, Better Auth |
 | Queue | Redis + BullMQ |
-| Worker | Python, Demucs (PyTorch, CPU), ffmpeg |
+| Worker | Python, Demucs (PyTorch, CPU), Basic Pitch (ONNX), ffmpeg, pydantic |
 | Data | PostgreSQL |
 | Files | SeaweedFS (S3-compatible) |
 | Infra | Docker Compose |
 
 ## Architecture
 
-Clean Architecture + tactical DDD in all three services; the API is a modular monolith. See [06](docs/06-domain.md), [07](docs/07-code-structure.md) and ADRs 0011–0018.
+Clean architecture + tactical DDD with the same shape in all three services: `modules/<context>/{domain,application,infrastructure}`, immutable Value Objects, curried (or closure) use cases, one factory per module, typed domain errors and entrypoints outside the modules. The API is a modular monolith with a transactional outbox. See [06](docs/06-domain.md), [07](docs/07-code-structure.md) and ADRs 0028–0032.
 
 ## Layout
 
