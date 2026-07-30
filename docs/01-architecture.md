@@ -23,7 +23,7 @@ flowchart LR
 | **API** | Validation, presigned URLs, job creation, status, SSE, history, auth. The single source of truth, in Postgres. |
 | **Redis + BullMQ** | `separation` queue. Retries, backoff, progress, events. |
 | **Worker** | Downloads the original, normalizes it with ffmpeg, runs Demucs, uploads the stems, reports progress. Stateless. |
-| **Postgres** | Tracks, jobs, stems and users (phase 5). |
+| **Postgres** | Tracks, jobs, stems, users and the outbox. |
 | **S3 storage** | Original files and stems. SeaweedFS locally, S3-compatible: moving to AWS S3 or Cloudflare R2 only changes environment variables. |
 
 ## Flow of a job
@@ -40,8 +40,9 @@ sequenceDiagram
   A-->>W: uploadUrl (presigned PUT) + trackId
   W->>M: PUT file
   W->>A: POST /tracks/:id/jobs
-  A->>R: add job {trackId, objectKey}
+  A->>A: job + outbox row (separation.requested), track → separating
   A-->>W: jobId
+  A->>R: outbox relay adds job {jobId, trackId, inputKey, outputPrefix, model}
   W->>A: GET /jobs/:id/events (SSE)
   R->>K: job
   K->>M: GET original
@@ -50,10 +51,11 @@ sequenceDiagram
   K->>R: updateProgress(%)
   R-->>A: progress event
   A-->>W: SSE progress
-  K->>M: PUT 6 stems
+  K->>M: PUT stems (FLAC, MP3 preview, peaks, MIDI)
   K->>R: completed {stems[]}
   R-->>A: completed event
-  A->>A: store stems in Postgres
+  A->>R: read the job's final state
+  A->>A: complete the job, attach the stems to the track
   A-->>W: SSE completed
   W->>A: GET /tracks/:id
   A-->>W: stems + presigned GET URLs
@@ -64,10 +66,10 @@ sequenceDiagram
 - **Swappable worker.** The worker only knows the queue and S3. Moving to a GPU or a cloud provider does not affect the API or the web.
 - **Files never pass through the API.** The web uploads to and downloads from S3 storage directly with presigned URLs. The API never streams audio (the ZIP download is the one exception).
 - **Shared contracts.** The zod schemas in `packages/contracts` define API and job payloads. The worker validates the same contract with generated pydantic models.
-- **Failures are expected.** Retries with backoff, idempotent jobs (same output key), timeouts based on duration.
+- **Failures are expected.** Retries with backoff for unexpected errors, no retries for business failures (`separation.*` codes), idempotent jobs (same job id and output keys), stalled jobs requeued, and startup reconciliation of unfinished jobs.
 - **Configuration by environment.** Nothing hardcoded; everything lives in `.env`.
 
-Domain model in [06-domain.md](06-domain.md). Layers and dependency rules in [07-code-structure.md](07-code-structure.md).
+Domain model in [06-domain.md](06-domain.md). Every service follows the same clean-architecture rules; layers and dependency rules in [07-code-structure.md](07-code-structure.md).
 
 ## Expected performance (CPU)
 

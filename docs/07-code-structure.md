@@ -1,21 +1,24 @@
 # 07 — Code structure and dependency rules
 
-One rule for all three services: **dependencies point toward the domain.**
+One rule for all three services: **dependencies point toward the domain.** All three follow the clean-architecture skills ([ADR 0028](adr/0028-clean-architecture-skills.md)), so the API, the worker and the web share one shape.
 
 ```
-interface / presentation  ─┐
-                           ├──▶  application  ──▶  domain
-infrastructure  ───────────┘
+entrypoints (routes, consumers, jobs, hooks, components)  ──▶  module factory
+                                                                    │
+modules/<context>/   infrastructure  ──▶  application  ──▶  domain
 ```
 
 | Layer | Contains | May import |
 |-------|----------|------------|
-| `domain` | Entities, value objects, events, business errors | Nothing external |
-| `application` | Use cases, ports (interfaces), internal DTOs | `domain` |
-| `infrastructure` | Adapters that implement ports | `application`, `domain`, libraries |
-| `interface` / `presentation` | HTTP, SSE, queue consumers, UI | `application`, `contracts` |
+| `domain` | Value Objects, Entities, `XList` collections, domain events, repository interfaces, typed errors | Domain code only (its own module, another module's domain, `shared`); no packages |
+| `application` | One use case per file (dependencies first, input second) and `factory.ts` | Its own folder and domain code; only `factory.ts` imports infrastructure |
+| `infrastructure` | `*Repository` implementations (Postgres, S3, BullMQ, HTTP, ffmpeg, Demucs, `<audio>`) | Domain, packages, generated contracts |
+| entrypoints (outside `modules/`) | Routes, middlewares, queue consumers, jobs, hooks, components, pages | Module factories and domain objects; never infrastructure |
 
-Each process's composition root is the only place that knows every layer ([ADR 0015](adr/0015-manual-composition-root.md)).
+- Every Value Object, Entity and list has a private constructor (a frozen dataclass in Python), `create` with `ensure*` guards, `fromPrimitive` / `toPrimitive` and `equals`; modifiers return new instances.
+- Every boundary to the outside world is a `*Repository`; its interface lives in `domain/`.
+- Errors are typed `DomainError`s with a stable code (`track.not_found`), mapped in one place per service: the API's error handler, the worker's queue consumer, the web's `useErrorMessage`.
+- Only the bootstrap (`server.ts`, `main.py`) and each module's `factory.ts` build infrastructure. There is no global composition root ([ADR 0015](adr/0015-manual-composition-root.md) is superseded).
 
 ## API (`apps/api`) — modular monolith
 

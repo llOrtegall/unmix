@@ -38,7 +38,7 @@ erDiagram
     text status "queued|processing|completed|failed"
     text stage
     int progress
-    jsonb failure
+    jsonb failure "{ code: separation.*, message }"
     timestamptz created_at
     timestamptz finished_at
   }
@@ -54,11 +54,12 @@ erDiagram
   }
   outbox {
     uuid id PK
-    text event_type "e.g. separation.requested.v1"
+    text event_type "e.g. separation.requested"
     jsonb payload
     timestamptz occurred_at
     timestamptz published_at "null = pending"
     int attempts
+    text last_error "last delivery failure"
   }
 ```
 
@@ -76,7 +77,8 @@ demo/original.mp3, demo/stems/...
 
 ## Notes
 
-- `outbox` is written in the same transaction as the aggregate; a relay publishes the pending rows ([ADR 0014](adr/0014-transactional-outbox.md)).
+- `outbox` is written in the same transaction as the aggregate; a relay publishes the pending rows ([ADR 0014](adr/0014-transactional-outbox.md)). Only `separation.requested` has an external route (the BullMQ job `separation.requested.v1`); the other events are marked as published.
+- `separation_jobs.failure` holds a `separation.*` code; migration `0005_separation_failure_codes` renamed the codes stored before [ADR 0031](adr/0031-worker-separation-module.md).
 - Better Auth owns `users`, `sessions`, `accounts` and `verifications`, all with UUID ids. `tracks.user_id` references `users.id` and cascades on delete ([ADR 0025](adr/0025-sessions-and-ownership.md)).
 - A track can have several jobs (manual retries, a different model in the future); `latest_job_id` points at the current one.
 - Demo tracks point at the shared files under `demo/`; deleting one never touches them.

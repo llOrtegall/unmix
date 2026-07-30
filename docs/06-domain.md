@@ -21,83 +21,90 @@ This vocabulary is used the same way in code, docs and conversations with the cl
 ```mermaid
 flowchart LR
   subgraph Core
-    S[Separation<br/>jobs, status, progress]
+    S[Separation<br/>jobs, status, progress, stems]
   end
   subgraph Supporting
     L[Library<br/>tracks, stems, history]
+    P[Playback<br/>mixer in the browser]
   end
   subgraph Generic
     I[Identity<br/>Better Auth]
-    ST[Storage<br/>S3 port]
   end
-  L -- TrackUploaded --> S
-  S -- SeparationCompleted --> L
-  I -. userId .-> L
-  L --> ST
-  S --> ST
+  S -- SeparationRequested / Completed / Failed --> L
+  I -- UserRegistered --> L
+  L -. stems .-> P
 ```
 
-| Context | Type | Lives in | Modeling |
-|---------|------|----------|----------|
-| Separation | Core | `apps/api/modules/separation` + `services/worker` | Full tactical DDD |
-| Library | Supporting | `apps/api/modules/library` | Light tactical DDD |
-| Identity | Generic | `apps/api/modules/identity` | Direct Better Auth integration |
-| Storage | Infrastructure | `ObjectStorage` port | No domain |
+| Context | Type | Lives in |
+|---------|------|----------|
+| Separation | Core | API `modules/separation`, the worker's `modules/separation`, the web's `modules/separation` |
+| Library | Supporting | API `modules/library`, the web's `modules/track` |
+| Playback | Supporting | The web's `modules/mixer` |
+| Identity | Generic | API `modules/identity` (Better Auth), the web's `modules/session` |
 
-Contexts do not import each other's code. They talk through domain events (inside the API) or versioned messages from `packages/contracts` (API ↔ worker).
+The API also has two technical modules, `outbox` (relays events to the queue) and `health`. Storage is not a context: each module that needs files has its own `StorageRepository` interface and an S3 implementation.
+
+Modules reach each other only through another module's `domain/` or its `application/factory.ts`. Separation depends on the library's domain (`Track`, `TrackDuration`, `StemList`); the library never depends on separation. Inside the API, contexts react to each other through domain events; between processes they use the versioned messages in `packages/contracts`.
 
 ## Aggregates
 
 ### Library · `Track`
 
-- Root: `Track` (`TrackId`, `ownerId`, `title`, `SourceMedia`, `Duration`, `status`, `credit?`).
-- Contains: `Stem[]` (`StemName`, `ObjectKey`, `sizeBytes`, `silent`, preview and peaks keys).
+- Root: `Track` (`TrackId`, owner `UserId`, `TrackTitle`, `OriginalFilename`, `MediaType`, `FileSize`, input `ObjectKey`, `TrackStatus`, `TrackDuration?`, latest `JobId?`, `StemList`, `Credit?`, `CreatedAt`).
+- Status: `awaiting_upload` → `separating` → `completed` or `failed`. A track that is not separating and not completed can start a new separation. `uploaded` is still a valid status, but no transition sets it today.
 - Invariants:
-  - A track has at most one stem per `StemName`.
-  - Stems are attached only while the track is `separating`.
-  - `Duration` ≤ the configured limit (10 min).
+  - The upload fits the size limit (`track.file_too_large`) and is an audio or video type (`track.unsupported_media_type`).
+  - A track has at most one stem per `StemName`; stems are attached only when a separation completes.
+  - A track cannot start a separation or be deleted while it is separating (`track.busy`); stems can be downloaded only once it is completed (`track.stems_not_ready`).
+  - Only the outcome of its latest job changes it; late or repeated outcomes are ignored.
   - Only its owner can see or change it; for anyone else it does not exist ([ADR 0025](adr/0025-sessions-and-ownership.md)).
 
 ### Separation · `SeparationJob`
 
-- Root: `SeparationJob` (`JobId`, `TrackId`, `model`, `status`, `Progress`, `stage`, `attempts`, `failure?`).
+- Root: `SeparationJob` (`JobId`, `TrackId`, `ModelName`, `JobStatus`, `Stage?`, `Progress`, `JobFailure?`, `CreatedAt`, `FinishedAt?`, recorded `DomainEventList`).
 - State machine:
 
 ```mermaid
 stateDiagram-v2
-  [*] --> queued
-  queued --> processing: start
-  processing --> processing: progress
+  [*] --> queued: request
+  queued --> processing: recordProgress
+  processing --> processing: recordProgress
+  queued --> completed: complete
   processing --> completed: complete
-  processing --> queued: retry (attempts < max)
-  processing --> failed: fail (attempts = max)
-  queued --> failed: cancel
+  queued --> failed: fail
+  processing --> failed: fail / markAsLost
   completed --> [*]
   failed --> [*]
 ```
 
 - Invariants:
-  - `Progress` only grows within one attempt.
-  - `completed` requires the model's full set of stems.
-  - Invalid transitions return `Result.err(InvalidTransition)`.
+  - BullMQ retries happen inside `processing`: a failed attempt with retries left changes nothing ([ADR 0029](adr/0029-separation-jobs-and-outbox-modules.md)).
+  - `QueueJobState.applyTo(job)` decides the transition for each queue state (pending, active, completed, failed, missing), for live events and for startup reconciliation alike.
+  - Progress after the job finished, or a repeated outcome, is a no-op; a contradictory outcome (completing a failed job) throws `job.invalid_transition`.
+  - A job that the worker had started and the queue no longer knows is failed as lost (`separation.failed`).
   - A job belongs to whoever owns its track.
 
-## Value objects
+### Worker · `SeparationTask`
 
-`TrackId`, `JobId`, `StemName`, `Duration`, `MediaType`, `ObjectKey`, `Progress`, `SeparationModel`. Immutable; they validate on creation (a factory that returns a `Result`).
+The worker belongs to the Separation context, but its model is its own ([ADR 0031](adr/0031-worker-separation-module.md)): `SeparationTask` (what to split and where to put it) builds a `SeparationOutcome` with a `StemList`. `AudioDuration` enforces the length limit (`separation.duration_exceeded`), `RelativeLoudness` decides which stems are silent, and `SeparatedStem.should_be_transcribed()` decides which stems get MIDI. It knows nothing about tracks, users or job states.
+
+### Web
+
+The browser has its own small model of the same language ([ADR 0032](adr/0032-web-modules-hooks-and-components.md)): `TrackSummary.canBeDeleted()`, `Track.isReady()`, `UploadCandidate` (type and size limit before uploading), `Job.activeStage()`, `JobFailure.canBeRetried()` and the `Mix`, where solo wins over mute.
+
+## Value objects and errors
+
+Every attribute is a Value Object (`TrackId`, `JobId`, `StemName`, `TrackDuration`, `MediaType`, `ObjectKey`, `Progress`, `ModelName`, ...). They are immutable, validate in `create` through named `ensure*` guards, and are rebuilt from stored or received data through `fromPrimitive`, so external data is always validated again.
+
+A broken rule throws a typed `DomainError` with a stable code (`track.not_found`, `job.invalid_transition`, `separation.invalid_media`). Each error extends one category (`ValidationError`, `NotFoundError`, `ConflictError`, `ForbiddenError`), and each service maps the categories in one place: HTTP status in the API, retry or not in the worker, a message in the web.
 
 ## Domain events
 
-| Event | Emitter | Consumers |
-|-------|---------|-----------|
-| `TrackUploaded` | Library | Separation (creates the job) |
-| `SeparationRequested` | Separation | Outbox → `separation` queue → worker |
-| `SeparationProgressed` | Worker | Separation (updates the job) → SSE |
-| `SeparationCompleted` | Worker | Separation, Library (attaches stems) |
-| `SeparationFailed` | Worker | Separation, Library |
+| Event | Emitter | Reaction |
+|-------|---------|----------|
+| `separation.requested` | `SeparationJob.request` | Library `startTrackSeparation` (same transaction); outbox → `separation` queue → worker |
+| `separation.completed` | `SeparationJob.complete` | Library `completeTrackSeparation` (attaches stems and duration) |
+| `separation.failed` | `SeparationJob.fail` | Library `failTrackSeparation` |
+| `identity.user_registered` | Better Auth sign-up hook | Library `addDemoTrack` (a failure is logged, never blocks the sign-in) |
 
-Events inside the API go through the outbox ([ADR 0014](adr/0014-transactional-outbox.md)). Messages between processes use the versioned contracts ([ADR 0016](adr/0016-contracts-zod-json-schema-pydantic.md)).
-
-## The worker as part of a context
-
-The worker belongs to the Separation context, but its model is independent from the API's: it only knows `SeparationTask` (what to split, where to put it) and `Stem`. It knows nothing about tracks, users or job states.
+Entities record events; the use case saves the entity and publishes the events through `EventRepository`, which writes them to the outbox and runs the in-process subscribers in the same transaction ([ADR 0014](adr/0014-transactional-outbox.md), [ADR 0021](adr/0021-in-process-events-and-reconciliation.md)). Messages between processes use the versioned contracts ([ADR 0016](adr/0016-contracts-zod-json-schema-pydantic.md)).
