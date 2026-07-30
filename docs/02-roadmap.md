@@ -109,7 +109,7 @@ Every service moves to the shared clean-architecture rules ([ADR 0028](adr/0028-
 - [x] Step 4 — API: identity and health modules, `server.ts` bootstrap, web streams in the domain, final dependency rules ([ADR 0030](adr/0030-identity-health-and-bootstrap.md)).
 - [x] Step 5 — Worker: `separation` module (frozen-dataclass domain, closure use cases, per-job factory), queue consumer, pydantic-settings config, `separation.*` failure codes with a data migration, `mypy --strict` ([ADR 0031](adr/0031-worker-separation-module.md)).
 - [x] Step 6 — Web: `track`, `separation`, `session` and `mixer` modules, hooks, containers and presenters, one error dictionary, component tests ([ADR 0032](adr/0032-web-modules-hooks-and-components.md)).
-- [ ] Step 7 — Docs and READMEs.
+- [x] Step 7 — Docs and READMEs: code structure and domain docs, architecture flow, data model, setup checks, READMEs.
 
 ## Future
 
