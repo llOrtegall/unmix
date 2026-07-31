@@ -24,15 +24,14 @@ const setup = () => {
 
 describe("registerUpload", () => {
   describe("Basic behaviour", () => {
-    it("saves the track and signs an upload URL for its input key", async () => {
+    it("saves the track and signs an upload URL for it", async () => {
       const { trackRepository, storageRepository, register } = setup();
 
       const ticket = (await register(input())).toPrimitive();
 
       const saved = trackRepository.save.mock.calls[0]![0].toPrimitive();
       expect(saved).toMatchObject({ id: ticket.trackId, title: "My Song", status: "awaiting_upload" });
-      expect(storageRepository.signUpload.mock.calls[0]![0].toPrimitive()).toBe(saved.inputKey);
-      expect(storageRepository.signUpload.mock.calls[0]![2].toPrimitive()).toBe(1_000);
+      expect(storageRepository.signUpload.mock.calls[0]![0].toPrimitive()).toEqual(saved);
       expect(ticket.expiresInSeconds).toBe(900);
     });
   });

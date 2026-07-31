@@ -3,6 +3,7 @@ import { type Mocked, vi } from "vitest";
 import type { ObjectKey } from "../../../shared/domain/ObjectKey.ts";
 import { SignedUrl } from "../../domain/SignedUrl.ts";
 import type { StorageRepository } from "../../domain/StorageRepository.ts";
+import type { Track } from "../../domain/Track.ts";
 import { TrackFolderList } from "../../domain/TrackFolderList.ts";
 
 export const signedUrlFor = (key: ObjectKey): SignedUrl =>
@@ -10,7 +11,7 @@ export const signedUrlFor = (key: ObjectKey): SignedUrl =>
 
 export const create = (overrides: Partial<StorageRepository> = {}): Mocked<StorageRepository> =>
   ({
-    signUpload: vi.fn(async (key: ObjectKey) => signedUrlFor(key)),
+    signUpload: vi.fn(async (track: Track) => signedUrlFor(track.getInputKey())),
     signDownload: vi.fn(async (key: ObjectKey) => signedUrlFor(key)),
     exists: vi.fn().mockResolvedValue(true),
     read: vi.fn(async () => new Blob([]).stream()),

@@ -34,6 +34,6 @@ export const registerUpload =
     await trackRepository.save(track);
 
     const lifetime = UrlLifetime.forUpload();
-    const uploadUrl = await storageRepository.signUpload(track.getInputKey(), track.getMediaType(), track.getSize(), lifetime);
+    const uploadUrl = await storageRepository.signUpload(track, lifetime);
     return UploadTicket.create(track.getId(), uploadUrl, lifetime);
   };

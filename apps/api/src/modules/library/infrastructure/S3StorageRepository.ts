@@ -9,10 +9,9 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ObjectKey } from "../../shared/domain/ObjectKey.ts";
 import { createS3Client, type S3Settings } from "../../shared/infrastructure/s3Client.ts";
-import type { FileSize } from "../domain/FileSize.ts";
-import type { MediaType } from "../domain/MediaType.ts";
 import { SignedUrl } from "../domain/SignedUrl.ts";
 import type { StorageRepository } from "../domain/StorageRepository.ts";
+import type { Track } from "../domain/Track.ts";
 import { TrackFolder } from "../domain/TrackFolder.ts";
 import { TrackFolderList } from "../domain/TrackFolderList.ts";
 import type { UrlLifetime } from "../domain/UrlLifetime.ts";
@@ -31,14 +30,13 @@ export class S3StorageRepository implements StorageRepository {
     this.bucket = settings.bucket;
   }
 
-  async signUpload(key: ObjectKey, mediaType: MediaType, size: FileSize, lifetime: UrlLifetime): Promise<SignedUrl> {
-    // Signing Content-Length makes storage reject any body whose size differs from the declared one,
-    // which is the size checked against the upload limit.
+  async signUpload(track: Track, lifetime: UrlLifetime): Promise<SignedUrl> {
+    // Signing Content-Length makes storage reject a body larger than the size checked against the upload limit.
     const command = new PutObjectCommand({
       Bucket: this.bucket,
-      Key: key.toPrimitive(),
-      ContentType: mediaType.toPrimitive(),
-      ContentLength: size.toPrimitive(),
+      Key: track.getInputKey().toPrimitive(),
+      ContentType: track.getMediaType().toPrimitive(),
+      ContentLength: track.getSize().toPrimitive(),
     });
     return SignedUrl.create(await getSignedUrl(this.signer, command, { expiresIn: lifetime.toPrimitive() }));
   }
