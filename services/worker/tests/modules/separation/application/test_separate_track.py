@@ -70,7 +70,9 @@ class TestBasicBehaviour:
 
         repositories.storage.download.assert_called_once_with(task.input_key, tmp_path)
         repositories.media.normalize.assert_called_once_with(
-            tmp_path / f"source{task.input_key.suffix()}", tmp_path
+            tmp_path / f"source{task.input_key.suffix()}",
+            tmp_path,
+            AudioDuration.create(MAX_DURATION_SECONDS),
         )
         repositories.separator.separate.assert_called_once_with(
             audio, task.model, tmp_path, repositories.progress

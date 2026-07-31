@@ -49,7 +49,7 @@ def separate_track(
         source = storage_repository.download(task.input_key, command.workdir)
 
         progress_repository.report(Progress.start(Stage.NORMALIZING))
-        audio = media_repository.normalize(source, command.workdir)
+        audio = media_repository.normalize(source, command.workdir, max_duration)
         audio.duration.ensure_does_not_exceed(max_duration)
 
         progress_repository.report(Progress.start(Stage.SEPARATING))

@@ -9,12 +9,19 @@ from ..domain.normalized_audio import NormalizedAudio
 
 _MIX_FILE = "mix.wav"
 _UNDECODABLE = "ffmpeg could not decode the file."
+# Decode one second past the limit so an over-long track still measures as too long.
+_OVERSHOOT_SECONDS = 1
 
 
 class FfmpegMediaRepository:
-    """Extracts the audio (dropping video and cover art) as stereo 44.1 kHz 16-bit WAV."""
+    """Extracts the audio (dropping video and cover art) as stereo 44.1 kHz 16-bit WAV.
 
-    def normalize(self, source: Path, directory: Path) -> NormalizedAudio:
+    Output is capped near the duration limit: a small, highly compressible upload
+    (e.g. hours of FLAC silence) would otherwise expand to gigabytes of PCM before
+    the duration check runs.
+    """
+
+    def normalize(self, source: Path, directory: Path, limit: AudioDuration) -> NormalizedAudio:
         destination = directory / _MIX_FILE
         convert = subprocess.run(
             [
@@ -31,6 +38,8 @@ class FfmpegMediaRepository:
                 "44100",
                 "-c:a",
                 "pcm_s16le",
+                "-t",
+                str(limit.to_primitive() + _OVERSHOOT_SECONDS),
                 str(destination),
             ],
             capture_output=True,
